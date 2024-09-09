@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Adobe. All rights reserved.
+ * Copyright 2024 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,7 +21,7 @@ export const loadJarvisChat = async (getConfig, getMetadata, loadScript, loadSty
   if (jarvis === 'desktop' && !desktopViewport) return;
 
   const { initJarvisChat } = await import('../features/jarvis-chat.js');
-  initJarvisChat(config, loadScript, loadStyle);
+  initJarvisChat(config, loadScript, loadStyle, getMetadata);
 };
 
 export const loadPrivacy = async (getConfig, loadScript) => {
@@ -51,7 +51,10 @@ export const loadPrivacy = async (getConfig, loadScript) => {
 
 export const loadGoogleLogin = async (getMetadata, loadIms, loadScript) => {
   const googleLogin = getMetadata('google-login')?.toLowerCase();
-  if (googleLogin !== 'on' || window.adobeIMS?.isSignedInUser()) return;
+  if (window.adobeIMS?.isSignedInUser() || !['mobile', 'desktop', 'on'].includes(googleLogin)) return;
+  const desktopViewport = window.matchMedia('(min-width: 900px)').matches;
+  if (googleLogin === 'mobile' && desktopViewport) return;
+  if (googleLogin === 'desktop' && !desktopViewport) return;
 
   const { default: initGoogleLogin } = await import('../features/google-login.js');
   initGoogleLogin(loadIms, getMetadata, loadScript);

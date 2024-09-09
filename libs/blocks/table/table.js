@@ -5,7 +5,7 @@ import { decorateButtons } from '../../utils/decorate.js';
 const DESKTOP_SIZE = 900;
 const MOBILE_SIZE = 768;
 const tableHighlightLoadedEvent = new Event('milo:table:highlight:loaded');
-
+let tableIndex = 0;
 function defineDeviceByScreenSize() {
   const screenWidth = window.innerWidth;
   if (screenWidth >= DESKTOP_SIZE) {
@@ -17,35 +17,34 @@ function defineDeviceByScreenSize() {
   return 'TABLET';
 }
 
-function handleHeading(headingCols) {
+function handleHeading(table, headingCols) {
+  const isPriceBottom = table.classList.contains('pricing-bottom');
   headingCols.forEach((col, i) => {
     col.classList.add('col-heading');
-
-    if (!col.innerHTML) {
-      col.classList.add('hidden');
-      return;
-    }
-
-    if (!col.classList.contains('no-rounded') && headingCols[i - 1] && !headingCols[i - 1].innerText) {
-      col.classList.add('top-left-rounded');
-    }
+    if (!col.innerHTML) return;
 
     const elements = col.children;
     if (!elements.length) {
-      col.innerHTML = `<p class="heading-title">${col.innerHTML}</p>`;
+      col.innerHTML = `<p class="tracking-header">${col.innerHTML}</p>`;
     } else {
       let textStartIndex = 0;
-      if (elements[0]?.querySelector('img')) {
+      const iconTile = elements[0]?.querySelector('img');
+      if (iconTile) {
         textStartIndex += 1;
+        if (!(table.classList.contains('merch'))) iconTile.closest('p').classList.add('header-product-tile');
       }
-      elements[textStartIndex]?.classList.add('heading-title');
+      elements[textStartIndex]?.classList.add('tracking-header');
+      const pricingElem = elements[textStartIndex + 1];
+      const bodyElem = elements[textStartIndex + 2];
 
-      if (elements[textStartIndex + 1]) {
-        elements[textStartIndex + 1].classList.add('pricing');
+      if (pricingElem) {
+        pricingElem.classList.add('pricing');
+      }
+      if (bodyElem) {
+        bodyElem.classList.add('body');
       }
 
       decorateButtons(col, 'button-l');
-
       const buttonsWrapper = createTag('div', { class: 'buttons-wrapper' });
       col.append(buttonsWrapper);
       const buttons = col.querySelectorAll('.con-button');
@@ -54,7 +53,40 @@ function handleHeading(headingCols) {
         const btnWrapper = btn.closest('P');
         buttonsWrapper.append(btnWrapper);
       });
+
+      const headingContent = createTag('div', { class: 'heading-content' });
+      const headingButton = createTag('div', { class: 'heading-button' });
+
+      [...elements].forEach((e) => {
+        if (e.classList.contains('pricing') && isPriceBottom) headingButton.appendChild(e);
+        else headingContent.appendChild(e);
+      });
+
+      headingButton.appendChild(buttonsWrapper);
+      col.append(headingContent, headingButton);
     }
+
+    const trackingHeader = col.querySelector('.tracking-header');
+    const nodeToApplyRoleScope = trackingHeader ?? col;
+
+    if (trackingHeader) {
+      const trackingHeaderID = `t${tableIndex + 1}-c${i + 1}-header`;
+      trackingHeader.setAttribute('id', trackingHeaderID);
+
+      const headerBody = col.querySelector('.body:not(.action-area)');
+      headerBody?.setAttribute('id', `${trackingHeaderID}-body`);
+
+      const headerPricing = col.querySelector('.pricing');
+      headerPricing?.setAttribute('id', `${trackingHeaderID}-pricing`);
+
+      const describedBy = `${headerBody?.id ?? ''} ${headerPricing?.id ?? ''}`.trim();
+      trackingHeader.setAttribute('aria-describedby', describedBy);
+
+      col.removeAttribute('role');
+    }
+
+    nodeToApplyRoleScope.setAttribute('role', 'columnheader');
+    nodeToApplyRoleScope.setAttribute('scope', 'col');
   });
 }
 
@@ -74,17 +106,10 @@ function handleHighlight(table) {
 
     firstRowCols.forEach((col, i) => {
       col.classList.add('col-highlight');
-      const hasText = col.innerText;
-      if (hasText) {
+      if (col.innerText) {
         headingCols[i]?.classList.add('no-rounded');
-      } else if (!headingCols[i]?.innerText) {
-        col.classList.add('hidden');
-        headingCols[i]?.classList.add('hidden');
       } else {
         col.classList.add('hidden');
-        if (!headingCols[i - 1]?.innerText) {
-          headingCols[i]?.classList.add('top-left-rounded');
-        }
       }
     });
   } else {
@@ -92,7 +117,7 @@ function handleHighlight(table) {
     firstRow.classList.add('row-heading');
   }
 
-  handleHeading(headingCols);
+  handleHeading(table, headingCols);
   table.dispatchEvent(tableHighlightLoadedEvent);
 }
 
@@ -113,10 +138,31 @@ function handleExpand(e) {
   }
 }
 
+function handleTitleText(cell) {
+  if (cell.querySelector('.table-title-text')) return;
+  const textSpan = createTag('span', { class: 'table-title-text' });
+  while (cell.firstChild) textSpan.append(cell.firstChild);
+
+  const iconTooltip = textSpan.querySelector('.icon-info, .icon-tooltip, .milo-tooltip');
+  if (iconTooltip) cell.append(iconTooltip.closest('em') || iconTooltip);
+
+  const firstIcon = textSpan.querySelector('.icon:first-child');
+  let nodeToInsert = textSpan;
+
+  if (firstIcon) {
+    const titleRowSpan = createTag('span', { class: 'table-title-row' });
+    titleRowSpan.append(firstIcon, textSpan);
+    nodeToInsert = titleRowSpan;
+  }
+
+  cell.insertBefore(nodeToInsert, cell.firstChild);
+}
+
 /**
  * @param {*} sectionParams that is from init()
  * @returns {boolean expandSection} that is the only variable get updated from sectionParams
  */
+
 function handleSection(sectionParams) {
   const {
     row, index, allRows, rowCols, isMerch, isCollapseTable, isHighlightTable,
@@ -139,6 +185,7 @@ function handleSection(sectionParams) {
         merchCol.setAttribute('role', 'rowheader');
       });
     } else {
+      handleTitleText(sectionHeadTitle);
       sectionHeadTitle.classList.add('section-head-title');
       sectionHeadTitle.setAttribute('role', 'rowheader');
     }
@@ -165,6 +212,8 @@ function handleSection(sectionParams) {
     if (!isMerch) {
       const sectionRowTitle = nextRowCols?.[0];
       sectionRowTitle.classList.add('section-row-title');
+      sectionRowTitle.setAttribute('role', 'rowheader');
+      sectionRowTitle.setAttribute('scope', 'row');
     }
   } else if (!row.classList.contains('row-1') && (!isHighlightTable || !row.classList.contains('row-2'))) {
     row.classList.add('section-row');
@@ -189,7 +238,10 @@ function handleSection(sectionParams) {
       });
     } else {
       const sectionRowTitle = rowCols[0];
+      handleTitleText(sectionRowTitle);
       sectionRowTitle.classList.add('section-row-title');
+      sectionRowTitle.setAttribute('role', 'rowheader');
+      sectionRowTitle.setAttribute('scope', 'row');
     }
   }
   return expandSection;
@@ -270,16 +322,16 @@ function handleScrollEffect(table) {
   } else {
     headingRow.classList.add('top-border-transparent');
   }
-  headingRow.style.top = `${gnavHeight + (highlightRow ? highlightRow.offsetHeight : 0)}px`;
+  const topOffset = gnavHeight + (highlightRow ? highlightRow.offsetHeight : 0);
+  headingRow.style.top = `${topOffset}px`;
 
   const intercept = table.querySelector('.intercept') || createTag('div', { class: 'intercept' });
   intercept.setAttribute('data-observer-intercept', '');
-  table.append(intercept);
   headingRow.insertAdjacentElement('beforebegin', intercept);
 
   const observer = new IntersectionObserver(([entry]) => {
     headingRow.classList.toggle('active', !entry.isIntersecting);
-  });
+  }, { rootMargin: `-${topOffset}px` });
   observer.observe(intercept);
 }
 
@@ -287,11 +339,29 @@ function applyStylesBasedOnScreenSize(table, originTable) {
   const isMerch = table.classList.contains('merch');
   const deviceBySize = defineDeviceByScreenSize();
 
+  const setRowStyle = () => {
+    if (isMerch) return;
+    const sectionRow = Array.from(table.getElementsByClassName('section-row'));
+    if (sectionRow.length) {
+      const colsForTablet = sectionRow[0].children.length - 1;
+      const percentage = 100 / colsForTablet;
+      const templateColumnsValue = `repeat(auto-fit, ${percentage}%)`;
+      sectionRow.forEach((row) => {
+        if (deviceBySize === 'TABLET' || (deviceBySize === 'MOBILE' && !row.querySelector('.col-3'))) {
+          row.style.gridTemplateColumns = templateColumnsValue;
+        } else {
+          row.style.gridTemplateColumns = '';
+        }
+      });
+    }
+  };
+
   const reAssignEvents = (tableEl) => {
     tableEl.dispatchEvent(tableHighlightLoadedEvent);
     tableEl.querySelectorAll('.icon.expand').forEach((icon) => {
       icon.parentElement.classList.add('point-cursor');
       icon.parentElement.addEventListener('click', () => handleExpand(icon));
+      icon.parentElement.setAttribute('tabindex', 0);
       icon.parentElement.addEventListener('keydown', (e) => {
         e.preventDefault();
         if (e.key === 'Enter' || e.key === ' ') handleExpand(icon);
@@ -301,6 +371,7 @@ function applyStylesBasedOnScreenSize(table, originTable) {
   };
 
   const mobileRenderer = () => {
+    table.dispatchEvent(tableHighlightLoadedEvent);
     const headings = table.querySelectorAll('.row-heading .col');
     const headingsLength = headings.length;
 
@@ -317,7 +388,6 @@ function applyStylesBasedOnScreenSize(table, originTable) {
       table.innerHTML = originTable.innerHTML;
       reAssignEvents(table);
       const filters = Array.from(table.parentElement.querySelectorAll('.filter')).map((f) => parseInt(f.value, 10));
-      const highlights = table.querySelectorAll('.row-highlight .col');
       const rows = table.querySelectorAll('.row');
 
       if (isMerch) {
@@ -328,13 +398,11 @@ function applyStylesBasedOnScreenSize(table, originTable) {
 
       if (filters[0] > filters[1]) {
         if (isMerch) {
-          rows.forEach((row) => {
-            row.querySelector('.col:not(.section-row-title)').style.order = 1;
-          });
+          rows.forEach((row) => row.querySelector('.col:not(.section-row-title)')
+            .classList.add('force-last'));
         } else {
-          rows.forEach((row) => {
-            row.querySelector('.col:not(.section-row-title, .col-1)').style.order = 1;
-          });
+          rows.forEach((row) => row.querySelector('.col:not(.section-row-title, .col-1)')
+            .classList.add('force-last'));
         }
       } else if (filters[0] === filters[1]) {
         rows.forEach((row) => {
@@ -342,23 +410,21 @@ function applyStylesBasedOnScreenSize(table, originTable) {
         });
       }
 
-      highlights.forEach((highlight, index) => {
-        if (!highlight.innerHTML && !headings[index + 1]?.classList.contains('hidden')) {
-          table.querySelector('.row-heading').querySelectorAll(`.col-${index + 1}`).forEach((heading) => {
-            heading.classList.add('top-left-rounded', 'top-right-rounded');
-          });
-        }
-      });
+      setRowStyle();
+
+      if (table.matches('.sticky')) handleScrollEffect(table);
     };
 
-    if (!table.parentElement.querySelector('.filters')) {
+    // Remove filter if table there are only 2 columns
+    const filter = isMerch ? headingsLength > 2 : headingsLength > 3;
+    if (!table.parentElement.querySelector('.filters') && filter) {
       const filters = createTag('div', { class: 'filters' });
       const filter1 = createTag('div', { class: 'filter-wrapper' });
       const filter2 = createTag('div', { class: 'filter-wrapper' });
       const colSelect0 = createTag('select', { class: 'filter' });
       const headingsFromOrigin = originTable.querySelectorAll('.col-heading');
       headingsFromOrigin.forEach((heading, index) => {
-        const title = heading.querySelector('.heading-title');
+        const title = heading.querySelector('.tracking-header');
         if (!title || (!isMerch && title.closest('.col-1'))) return;
 
         const option = createTag('option', { value: index }, title.innerText);
@@ -377,6 +443,7 @@ function applyStylesBasedOnScreenSize(table, originTable) {
       filter2.addEventListener('change', filterChangeEvent);
       table.parentElement.insertBefore(filters, table);
       table.parentElement.classList.add(`table-${table.classList.contains('merch') ? 'merch-' : ''}section`);
+      filterChangeEvent();
     }
   };
 
@@ -396,24 +463,14 @@ function applyStylesBasedOnScreenSize(table, originTable) {
     });
   }
 
-  const sectionRow = Array.from(table.getElementsByClassName('section-row'));
-  if (sectionRow.length > 0) {
-    const colsForTablet = sectionRow[0].children.length - 1;
-    const percentage = 100 / colsForTablet;
-    const templateColumnsValue = `repeat(auto-fit, ${percentage}%)`;
-    sectionRow.forEach((row) => {
-      if (isMerch) return;
-      if (deviceBySize === 'TABLET' || (deviceBySize === 'MOBILE' && !row.querySelector('.col-3'))) {
-        row.style.gridTemplateColumns = templateColumnsValue;
-      } else {
-        row.style.gridTemplateColumns = '';
-      }
-    });
-  }
+  setRowStyle();
 }
 
 export default function init(el) {
   el.setAttribute('role', 'table');
+  if (el.parentElement.classList.contains('section')) {
+    el.parentElement.classList.add(`table-${el.classList.contains('merch') ? 'merch-' : ''}section`);
+  }
   const rows = Array.from(el.children);
   const isMerch = el.classList.contains('merch');
   const isCollapseTable = el.classList.contains('collapse') && !isMerch;
@@ -439,9 +496,6 @@ export default function init(el) {
       col.dataset.colIndex = cdx + 1;
       col.classList.add('col', `col-${cdx + 1}`);
       col.setAttribute('role', 'cell');
-      if (col.innerHTML) {
-        col.tabIndex = 0;
-      }
     });
 
     expandSection = handleSection(sectionParams);
@@ -452,7 +506,10 @@ export default function init(el) {
   handleHighlight(el);
   if (isMerch) formatMerchTable(el);
 
-  window.addEventListener(MILO_EVENTS.LCP_LOADED, () => {
+  let isDecorated = false;
+
+  const handleTable = () => {
+    if (isDecorated) return;
     let originTable;
     let visibleHeadingsSelector = '.col-heading:not(.hidden, .col-1)';
     if (isMerch) {
@@ -476,5 +533,22 @@ export default function init(el) {
       deviceBySize = defineDeviceByScreenSize();
       handleResize();
     });
-  }, { once: true });
+
+    isDecorated = true;
+  };
+
+  window.addEventListener(MILO_EVENTS.DEFERRED, () => {
+    handleTable();
+  }, true);
+
+  const observer = new window.IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      observer.disconnect();
+      handleTable();
+    }
+  });
+
+  observer.observe(el);
+
+  tableIndex++;
 }

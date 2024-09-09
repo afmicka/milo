@@ -5,6 +5,7 @@ import {
   loadScript,
   getConfig,
   createTag,
+  localizeLink,
 } from '../../utils/utils.js';
 
 const { env, miloLibs, codeRoot } = getConfig();
@@ -25,12 +26,12 @@ export const getFaasHostSubDomain = (environment) => {
   if (faasEnv === 'qa') {
     return 'qa.';
   }
-  return 'dev.';
+  return 'qa.';
 };
 
 const base = miloLibs || codeRoot;
 export const faasHostUrl = `https://${getFaasHostSubDomain()}apps.enterprise.adobe.com`;
-const faasCurrentJS = `${faasHostUrl}/faas/service/jquery.faas-current.js`;
+const faasCurrentJS = base.includes('localhost') ? `${base}/deps/jquery.faas-current.js` : `${faasHostUrl}/faas/service/jquery.faas-current.js`;
 export const loadFaasFiles = () => {
   loadStyle(`${base}/blocks/faas/faas.css`);
   return Promise.all([
@@ -247,7 +248,7 @@ const beforeSubmitCallback = () => {
       }),
     })
       .catch((error) => {
-        console.error('AA Sandbox Error:', error);
+        window.lana.log(`AA Sandbox Error: ${error.reason || error.error || error.message || error}`, { tags: 'errorType=info,module=faas' });
       });
   }
 };
@@ -259,23 +260,12 @@ export const makeFaasConfig = (targetState) => {
     return state;
   }
 
-  const url = targetState.d;
-  let destinationURL = '';
-  try {
-    // checking if URL is absolute.
-    new URL(url);
-    destinationURL = targetState.d;
-  } catch (e) {
-    // in case of relative:
-    destinationURL = window.location.origin + targetState.d;
-  }
-
   const config = {
     multicampaignradiostyle: targetState.multicampaignradiostyle ?? false,
     hidePrepopulated: targetState.hidePrepopulated ?? false,
     id: targetState.id,
     l: targetState.l,
-    d: destinationURL,
+    d: localizeLink(targetState.d),
     as: targetState.as,
     ar: targetState.ar,
     pc: {
@@ -362,7 +352,11 @@ export const initFaas = (config, targetEl) => {
   if (state.complete) {
     if (state.js) {
       Object.keys(state.js).forEach((key) => {
-        state[key] = state.js[key];
+        if (key === 'd') {
+          state[key] = localizeLink(state.js[key]);
+        } else {
+          state[key] = state.js[key];
+        }
       });
       delete state.js;
     }

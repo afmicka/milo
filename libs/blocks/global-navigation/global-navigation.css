@@ -32,8 +32,7 @@ header.global-navigation {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--feds-background-nav--light);
-  visibility: visible;
+  background-color: var(--feds-background-nav);
   box-sizing: content-box;
   overflow-x: clip;
 }
@@ -44,7 +43,7 @@ header.global-navigation {
   display: flex;
   justify-content: center;
   height: var(--feds-height-nav);
-  background-color: var(--feds-background-nav--light);
+  background-color: var(--feds-background-nav);
 }
 
 .feds-topnav {
@@ -63,8 +62,8 @@ header.global-navigation {
   display: none;
   flex-direction: column;
   height: 100vh;
-  border-top: 1px solid var(--feds-borderColor--light);
-  background-color: var(--feds-background-nav--light);
+  border-top: 1px solid var(--feds-borderColor);
+  background-color: var(--feds-background-nav);
 }
 
 [dir = "rtl"] .feds-nav-wrapper {
@@ -82,6 +81,11 @@ header.global-navigation {
   overflow-y: auto;
 }
 
+/* Promo */
+.global-navigation .aside.promobar {
+  z-index: 1;
+}
+
 /* Hamburger toggle */
 .feds-toggle {
   width: 60px;
@@ -90,7 +94,7 @@ header.global-navigation {
   border: none;
   background: transparent;
   box-shadow: none;
-  color: #2d2d2d;
+  color: var(--feds-color-hamburger);
   cursor: pointer;
   font-size: 20px;
   font-weight: 300;
@@ -149,8 +153,7 @@ header.global-navigation {
 /* Popup */
 .feds-popup {
   display: none;
-  padding: 12px 0;
-  background-color: var(--feds-background-popup--light);
+  background-color: var(--feds-background-popup);
 }
 
 .feds-popup p {
@@ -171,7 +174,7 @@ header.global-navigation {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.4;
-  color: var(--feds-color-link--light);
+  color: var(--feds-color-link);
   white-space: nowrap;
 }
 
@@ -184,7 +187,7 @@ header.global-navigation {
 }
 
 .feds-navItem:not(:last-child) > .feds-navLink {
-  border-bottom: 1px solid var(--feds-borderColor-link--light);
+  border-bottom: 1px solid var(--feds-borderColor-link);
 }
 
 /* Item with active dropdown */
@@ -198,7 +201,7 @@ header.global-navigation {
   bottom: 0;
   left: 0;
   width: 2px;
-  background: var(--feds-color-link--light);
+  background: var(--feds-color-link);
   content: "";
   z-index: 1;
 }
@@ -210,7 +213,7 @@ header.global-navigation {
 
 .feds-popup .feds-navLink:hover,
 .feds-popup .feds-navLink:focus {
-  background-color: var(--feds-background-link--hover--light);
+  background-color: var(--feds-background-link--hover);
 }
 
 .feds-cta-wrapper {
@@ -284,11 +287,11 @@ header.global-navigation {
   display: none;
   font-size: 20px;
   line-height: 1;
-  color: var(--feds-color-link--light);
+  color: var(--feds-color-link);
 }
 
 .feds-search-close:hover {
-  color: var(--feds-color-link--hover--light);
+  color: var(--feds-color-link--hover);
 }
 
 .feds-search-close:before {
@@ -299,7 +302,7 @@ header.global-navigation {
 .feds-breadcrumbs-wrapper {
   display: flex;
   order: -1;
-  border-bottom: 1px solid var(--feds-borderColor--light);
+  border-bottom: 1px solid var(--feds-borderColor);
 }
 
 .feds-breadcrumbs {
@@ -352,16 +355,32 @@ header.global-navigation {
 
 .feds-breadcrumbs a {
   display: block;
-  color: #707070;
+  color: var(--feds-color-link-breadcrumbs);
 }
 
 .feds-breadcrumbs [aria-current] {
-  color: #2c2c2c;
+  color: var(--feds-color-breadcrumbs--current);
 }
 
 .feds-breadcrumbs li:not(:first-of-type)::before {
   padding: 0 12px;
   content: '/';
+}
+
+.feds-utilities {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--feds-gutter);
+  z-index: 1; /* Useful for UNav dropdowns */
+}
+
+.feds-utilities .unav-comp-app-switcher-popover, /* App Switcher */
+.feds-utilities .spectrum-Dialog-content, /* Notifications */
+.feds-utilities .unav-comp-external-profile, /* Profile */
+.feds-utilities .unav-comp-help-popover, /* Help */
+.feds-utilities .unc-overlay-container { /* Tooltips */
+  transform: translate3d(0,0,0); /* Fix Safari issues w/ position: sticky */
 }
 
 /* Profile styles - to be removed after IMS takes over the profile */
@@ -389,7 +408,7 @@ header.global-navigation {
 .feds-signIn {
   padding: 11px var(--feds-gutter);
   border-radius: var(--feds-radius-utilityIcon);
-  color: #4B4B4B;
+  color: var(--feds-color-signIn);
   white-space: nowrap;
   border: none;
   font: inherit;
@@ -406,7 +425,7 @@ header.global-navigation {
   display: none;
   right: 0;
   top: 100%;
-  background-color: var(--feds-background-popup--light);
+  background-color: var(--feds-background-popup);
   overflow: hidden;
   box-shadow: 0 3px 3px 0 rgb(0 0 0 / 20%);
   line-height: 1.4;
@@ -432,14 +451,18 @@ header.global-navigation {
 .feds-signIn-dropdown li > a,
 .feds-signIn-dropdown .feds-signIn {
   display: block;
-  color: var(--feds-color-link--light);
+  color: var(--feds-color-link);
   padding: 6px 32px;
 }
 
 .feds-signIn-dropdown li > a:hover,
 .feds-signIn-dropdown .feds-signIn:hover {
-  color: var(--feds-color-link--hover--light);
-  background-color: var(--feds-background-link--hover--light);
+  color: var(--feds-color-link--hover);
+  background-color: var(--feds-background-link--hover);
+}
+
+.feds-utilities .unav-comp-profile .secondary-button{
+  line-height: inherit;
 }
 
 #feds-googleLogin {
@@ -463,7 +486,7 @@ header.global-navigation {
   }
 
   .feds-topnav-wrapper {
-    border-bottom: 1px solid var(--feds-borderColor--light);
+    border-bottom: 1px solid var(--feds-borderColor);
     box-sizing: content-box;
   }
 
@@ -489,6 +512,16 @@ header.global-navigation {
     padding-bottom: 0 !important; /* Remove JS-set one */
   }
 
+  /* Promo */
+  .global-navigation .aside.promobar {
+    display: flex;
+    min-height: var(--global-height-navPromo);
+  }
+
+  .feds-promo .feds-promo-content {
+    padding: 24px 32px;
+  }
+
   /* Brand block */
   .feds-brand-image + .feds-brand-label {
     display: flex;
@@ -508,15 +541,20 @@ header.global-navigation {
     position: absolute;
     top: 100%;
     left: 0;
-    padding: 0;
     z-index: 1;
     box-shadow: 0 3px 3px 0 rgb(0 0 0 / 20%);
     transform: translate3d(0,0,0); /* Fix Safari issues w/ position: sticky */
+    padding: 12px 0;
   }
 
   [dir = "rtl"] .feds-popup {
     left: auto;
     right: 0;
+  }
+
+  .feds-menu-container {
+    min-width: 100%;
+    padding: 0 12px 40px;
   }
 
   /* Nav Links */
@@ -530,8 +568,14 @@ header.global-navigation {
 
   .feds-navItem--megaMenu .feds-popup {
     right: 0;
-    justify-content: center;
-    padding: 20px 0;
+    padding: 40px 0 0;
+    max-height: calc(100vh - 100%);
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  .global-navigation.has-promo .feds-navItem--megaMenu .feds-popup {
+    max-height: calc(100vh - 100% - var(--global-height-navPromo));
   }
 
   [dir = "rtl"] .feds-navItem--megaMenu .feds-popup {
@@ -548,16 +592,24 @@ header.global-navigation {
   }
 
   .feds-navItem--section:only-of-type {
-    border-left: 1px solid var(--feds-borderColor--light);
-    border-right: 1px solid var(--feds-borderColor--light);
+    border-left: 1px solid var(--feds-borderColor);
+    border-right: 1px solid var(--feds-borderColor);
   }
 
   .feds-navItem--section > .feds-navLink {
     padding: 0 20px;
   }
 
+  .feds-navItem--section.feds-navItem--active > .feds-navLink:before {
+    margin: 0 20px;
+  }
+
   .feds-topnav--overflowing .feds-navItem--section > .feds-navLink {
     padding: 0 12px;
+  }
+
+  .feds-topnav--overflowing .feds-navItem--section.feds-navItem--active > .feds-navLink:before {
+    margin: 0 12px;
   }
 
   .feds-navItem:not(:last-child) > .feds-navLink {
@@ -594,22 +646,23 @@ header.global-navigation {
   }
 
   .feds-search-trigger svg path {
-    fill: var(--feds-color-link--light);
+    fill: var(--feds-color-link);
   }
 
   .feds-search-trigger:hover svg path {
-    fill: var(--feds-color-link--hover--light);
+    fill: var(--feds-color-link--hover);
   }
 
   /* Breadcrumbs */
   .feds-breadcrumbs-wrapper {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 1px); /* Accounting for nav bottom border */
     left: 0;
     right: 0;
     justify-content: center;
     border-bottom: unset;
     box-shadow: 0 3px 2px rgb(142 142 142 / 30%);
+    background: var(--feds-background-nav);
     transform: translate3d(0,0,0); /* Fix Safari issues w/ position: sticky */
   }
 
@@ -648,5 +701,13 @@ header.global-navigation {
 
   .feds-topnav--overflowing .feds-logo {
     display: none;
+  }
+
+  .feds-menu-container {
+    min-width: var(--feds-minWidth-menu);
+  }
+
+  .feds-navItem--megaMenu .feds-popup {
+    align-items: center;
   }
 }

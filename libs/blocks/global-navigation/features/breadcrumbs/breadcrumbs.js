@@ -1,5 +1,6 @@
-import { getMetadata } from '../../../../utils/utils.js';
+import { getMetadata, getConfig } from '../../../../utils/utils.js';
 import { toFragment, lanaLog } from '../../utilities/utilities.js';
+import { getFederatedUrl } from '../../../../utils/federated.js';
 
 const metadata = {
   seo: 'breadcrumbs-seo',
@@ -67,7 +68,7 @@ const createBreadcrumbs = (element) => {
 
 const createWithBase = async (el) => {
   const element = el || toFragment`<div><ul></ul></div>`;
-  const url = getMetadata(metadata.base);
+  const url = getFederatedUrl(getMetadata(metadata.base));
   if (!url) return null;
   try {
     const resp = await fetch(`${url}.plain.html`);
@@ -76,7 +77,7 @@ const createWithBase = async (el) => {
     element.querySelector('ul')?.prepend(...base.querySelectorAll('li'));
     return createBreadcrumbs(element);
   } catch (e) {
-    lanaLog({ e, message: 'Breadcrumbs failed fetching base' });
+    lanaLog({ e, message: 'Breadcrumbs failed fetching base', tags: 'errorType=info,module=gnav-breadcrumbs' });
     return null;
   }
 };
@@ -84,7 +85,11 @@ const createWithBase = async (el) => {
 const fromUrl = () => {
   if (getMetadata(metadata.fromUrl) !== 'on') return null;
   const list = toFragment`<ul></ul>`;
-  const paths = document.location.pathname.split('/').filter((n) => n);
+  const paths = document.location.pathname
+    .replace((getConfig().locale?.prefix || ''), '')
+    .split('/')
+    .filter((n) => n);
+
   for (let i = 0; i < paths.length; i += 1) {
     list.append(toFragment`
       <li>
@@ -101,7 +106,7 @@ export default async function init(el) {
     setBreadcrumbSEO(breadcrumbsEl);
     return breadcrumbsEl;
   } catch (e) {
-    lanaLog({ e, message: 'Breadcrumbs failed rendering' });
+    lanaLog({ e, message: 'Breadcrumbs failed rendering', tags: 'errorType=error,module=gnav-breadcrumbs' });
     return null;
   }
 }

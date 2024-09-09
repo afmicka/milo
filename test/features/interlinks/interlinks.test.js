@@ -17,9 +17,6 @@ function interlinksCheck(item) {
   if (!item.getAttribute('daa-ll')) {
     return;
   }
-  if (item.parentElement.getAttribute('daa-lh')) {
-    expect(item.parentElement.getAttribute('daa-lh')).to.contain('interlinks_p_');
-  } else return;
 
   foundInterlinks += 1;
 }
@@ -29,7 +26,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/maxlinks.plain.html' });
     await init('/test/features/interlinks/mocks/invalid.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(0);
   });
 
@@ -38,7 +35,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/nomain.plain.html' });
     await init('/test/features/interlinks/mocks/keywords.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(0);
   });
 
@@ -47,7 +44,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/interlinks.plain.html' });
     await init('/test/features/interlinks/mocks/empty.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(0);
   });
 
@@ -56,7 +53,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/maxlinks.plain.html' });
     await init('/test/features/interlinks/mocks/keywords.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(0);
   });
 
@@ -65,7 +62,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/interlinks.plain.html' });
     await init('/test/features/interlinks/mocks/nomatches.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(0);
   });
 
@@ -74,7 +71,7 @@ describe('Interlinks', async () => {
     document.body.innerHTML = await readFile({ path: './mocks/interlinks.plain.html' });
     await init('/test/features/interlinks/mocks/keywords.json');
     const atags = document.getElementsByTagName('a');
-    atags.forEach(interlinksCheck);
+    [...atags].forEach(interlinksCheck);
     expect(foundInterlinks).to.equal(3);
   });
 });

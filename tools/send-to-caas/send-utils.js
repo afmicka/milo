@@ -1,99 +1,16 @@
 import getUuid from '../../libs/utils/getUuid.js';
 import { getMetadata } from '../../libs/utils/utils.js';
+import { LOCALES } from '../../libs/blocks/caas/utils.js';
 
 const CAAS_TAG_URL = 'https://www.adobe.com/chimera-api/tags';
 const HLX_ADMIN_STATUS = 'https://admin.hlx.page/status';
-const URL_POSTXDM = 'https://14257-milocaasproxy-stage.adobeio-static.net/api/v1/web/milocaas/postXDM';
+const URL_POSTXDM = 'https://14257-milocaasproxy.adobeio-static.net/api/v1/web/milocaas/postXDM';
 const VALID_URL_RE = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/;
+const VALID_MODAL_RE = /fragments(.*)#[a-zA-Z0-9_-]+$/;
 
 const isKeyValPair = /(\s*\S+\s*:\s*\S+\s*)/;
 const isValidUrl = (u) => VALID_URL_RE.test(u);
-
-const LOCALES = {
-  // Americas
-  ar: { ietf: 'es-AR' },
-  br: { ietf: 'pt-BR' },
-  ca: { ietf: 'en-CA' },
-  ca_fr: { ietf: 'fr-CA' },
-  cl: { ietf: 'es-CL' },
-  co: { ietf: 'es-CO' },
-  la: { ietf: 'es-LA' },
-  mx: { ietf: 'es-MX' },
-  pe: { ietf: 'es-PE' },
-  '': { ietf: 'en-US' },
-  // EMEA
-  africa: { ietf: 'en-africa' },
-  be_fr: { ietf: 'fr-BE' },
-  be_en: { ietf: 'en-BE' },
-  be_nl: { ietf: 'nl-BE' },
-  cy_en: { ietf: 'en-CY' },
-  dk: { ietf: 'da-DK' },
-  de: { ietf: 'de-DE' },
-  ee: { ietf: 'et-EE' },
-  es: { ietf: 'es-ES' },
-  fr: { ietf: 'fr-FR' },
-  gr_en: { ietf: 'en-GR' },
-  ie: { ietf: 'en-IE' },
-  il_en: { ietf: 'en-IL' },
-  it: { ietf: 'it-IT' },
-  lv: { ietf: 'lv-LV' },
-  lt: { ietf: 'lt-LT' },
-  lu_de: { ietf: 'de-LU' },
-  lu_en: { ietf: 'en-LU' },
-  lu_fr: { ietf: 'fr-LU' },
-  hu: { ietf: 'hu-HU' },
-  mt: { ietf: 'en-MT' },
-  mena: { ietf: 'en-mena' },
-  mena_en: { ietf: 'en-mena' },
-  mena_ar: { ietf: 'ar-mena' },
-  mena_fr: { ietf: 'fr-mena' },
-  nl: { ietf: 'nl-NL' },
-  no: { ietf: 'no-NO' },
-  pl: { ietf: 'pl-PL' },
-  pt: { ietf: 'pt-PT' },
-  ro: { ietf: 'ro-RO' },
-  sa_en: { ietf: 'en-sa' },
-  ch_fr: { ietf: 'fr-CH' },
-  ch_de: { ietf: 'de-CH' },
-  ch_it: { ietf: 'it-CH' },
-  si: { ietf: 'sl-SI' },
-  sk: { ietf: 'sk-SK' },
-  fi: { ietf: 'fi-FI' },
-  se: { ietf: 'sv-SE' },
-  tr: { ietf: 'tr-TR' },
-  ae_en: { ietf: 'en-ae' },
-  uk: { ietf: 'en-GB' },
-  at: { ietf: 'de-AT' },
-  cz: { ietf: 'cs-CZ' },
-  bg: { ietf: 'bg-BG' },
-  ru: { ietf: 'ru-RU' },
-  ua: { ietf: 'uk-UA' },
-  il_he: { ietf: 'he-il' },
-  ae_ar: { ietf: 'ar-ae' },
-  sa_ar: { ietf: 'ar-sa' },
-  // Asia Pacific
-  au: { ietf: 'en-AU' },
-  hk_en: { ietf: 'en-HK' },
-  in: { ietf: 'en-in' },
-  id_id: { ietf: 'id-id' },
-  id_en: { ietf: 'en-id' },
-  my_ms: { ietf: 'ms-my' },
-  my_en: { ietf: 'en-my' },
-  nz: { ietf: 'en-nz' },
-  ph_en: { ietf: 'en-ph' },
-  ph_fil: { ietf: 'fil-PH' },
-  sg: { ietf: 'en-SG' },
-  th_en: { ietf: 'en-th' },
-  in_hi: { ietf: 'hi-in' },
-  th_th: { ietf: 'th-th' },
-  cn: { ietf: 'zh-CN' },
-  hk_zh: { ietf: 'zh-HK' },
-  tw: { ietf: 'zh-TW' },
-  jp: { ietf: 'ja-JP' },
-  kr: { ietf: 'ko-KR' },
-  vn_en: { ietf: 'en-vn' },
-  vn_vi: { ietf: 'vi-VN' },
-};
+const isValidModal = (u) => VALID_MODAL_RE.test(u);
 
 const [setConfig, getConfig] = (() => {
   let config = {
@@ -143,9 +60,19 @@ const prefixHttps = (url) => {
   return url;
 };
 
+const flattenLink = (link) => {
+  const htmlElement = document.createElement('div');
+  htmlElement.innerHTML = link;
+  return htmlElement.querySelector('a').getAttribute('href');
+};
+
 const checkUrl = (url, errorMsg) => {
-  if (url === undefined) return url;
-  return isValidUrl(url) ? prefixHttps(url) : { error: errorMsg };
+  if (url === undefined || isValidModal(url)) return url;
+  const flatUrl = url.includes('href=') ? flattenLink(url) : url;
+  if (isValidModal(flatUrl)) {
+    return flatUrl;
+  }
+  return isValidUrl(flatUrl) ? prefixHttps(flatUrl) : { error: errorMsg };
 };
 
 // Case-insensitive search through tag name, path, id and title for the searchStr
@@ -251,13 +178,29 @@ const getDateProp = (dateStr, errorMsg) => {
   }
 };
 
-const getOrigin = () => {
-  const origin = getConfig().project || getConfig().repo;
-  if (origin) return origin;
+const processRepoForFloodgate = (repo, fgColor) => {
+  if (repo && fgColor && fgColor !== 'default') {
+    return repo.slice(0, repo.lastIndexOf(`-${fgColor}`));
+  }
+  return repo;
+};
+
+export const getOrigin = (fgColor) => {
+  const { project, repo } = getConfig();
+  const origin = project || processRepoForFloodgate(repo, fgColor);
+
+  const mappings = {
+    cc: 'hawks',
+    dc: 'doccloud',
+  };
+  const originLC = mappings[origin.toLowerCase()] || origin;
+  if (originLC) {
+    return originLC;
+  }
 
   if (window.location.hostname.endsWith('.hlx.page')) {
-    const [, repo] = window.location.hostname.split('.')[0].split('--');
-    return repo;
+    const [, singlePageRepo] = window.location.hostname.split('.')[0].split('--');
+    return processRepoForFloodgate(singlePageRepo, fgColor);
   }
 
   throw new Error('No Project or Repo defined in config');
@@ -300,10 +243,11 @@ const getImagePathMd = (keyName) => {
 
 const getCardImageUrl = () => {
   const { doc } = getConfig();
-  const imageUrl = getImagePathMd('cardimage')
+  const imageUrl = getImagePathMd('image')
+    || getImagePathMd('cardimage')
     || getImagePathMd('cardimagepath')
-    || doc.querySelector('meta[property="og:image"]')?.content
-    || doc.querySelector('main')?.querySelector('img')?.src;
+    || doc.querySelector('main')?.querySelector('img')?.src.replace(/\?.*/, '')
+    || doc.querySelector('meta[property="og:image"]')?.content;
 
   if (!imageUrl) return null;
   return addHost(imageUrl);
@@ -366,8 +310,7 @@ const getBulkPublishLangAttr = async (options) => {
 const getCountryAndLang = async (options) => {
   const langStr = window.location.pathname === '/tools/send-to-caas/bulkpublisher.html'
     ? await getBulkPublishLangAttr(options)
-    : document.documentElement.lang;
-
+    : (LOCALES[window.location.pathname.split('/')[1]] || LOCALES['']).ietf;
   const langAttr = langStr?.toLowerCase().split('-') || [];
 
   const [lang = 'en', country = 'us'] = langAttr;
@@ -379,11 +322,17 @@ const getCountryAndLang = async (options) => {
 
 const parseCardMetadata = () => {
   const pageMd = {};
-  const mdEl = getConfig().doc.querySelector('.card-metadata');
+  const marqueeMetadata = getConfig().doc.querySelector('.caas-marquee-metadata');
+  const cardMetadata = getConfig().doc.querySelector('.card-metadata');
+  const mdEl = cardMetadata || marqueeMetadata;
+  const allowHtml = ['description'];
   if (mdEl) {
     mdEl.childNodes.forEach((n) => {
       const key = n.children?.[0]?.textContent?.toLowerCase();
-      const val = n.children?.[1]?.textContent;
+      let val = n.children?.[1]?.textContent;
+      if (marqueeMetadata && allowHtml.includes(key)) {
+        val = n.children?.[1]?.innerHTML;
+      }
       if (!key) return;
 
       pageMd[key] = val;
@@ -391,6 +340,12 @@ const parseCardMetadata = () => {
   }
   return pageMd;
 };
+
+function checkCtaUrl(s, options, i) {
+  if (s?.trim() === '') return '';
+  const url = s || options.prodUrl || window.location.origin + window.location.pathname;
+  return checkUrl(url, `Invalid Cta${i}Url: ${url}`);
+}
 
 /** card metadata props - either a func that computes the value or
  * 0 to use the string as is
@@ -415,10 +370,7 @@ const props = {
   cardtitle: 0,
   cardimage: () => getCardImageUrl(),
   cardimagealttext: (s) => s || getCardImageAltText(),
-  contentid: (_, options) => {
-    const floodGateColor = getMetadata('floodGateColor') || '';
-    return getUuid(`${options.prodUrl}${floodGateColor}`);
-  },
+  contentid: (_, options) => getUuid(options.prodUrl),
   contenttype: (s) => s || getMetaContent('property', 'og:type') || getConfig().contentType,
   country: async (s, options) => {
     if (s) return s;
@@ -442,24 +394,26 @@ const props = {
   },
   cta1icon: (s) => checkUrl(s, `Invalid Cta1Icon url: ${s}`),
   cta1style: 0,
+  cta1target: 0,
   cta1text: 0,
-  cta1url: (s, options) => {
-    if (s?.trim() === '') return '';
-    const url = s || options.prodUrl || window.location.origin + window.location.pathname;
-    return checkUrl(url, `Invalid Cta1Url: ${url}`);
-  },
+  cta1url: (s, options) => checkCtaUrl(s, options, 1),
   cta2icon: (s) => checkUrl(s, `Invalid Cta2Icon url: ${s}`),
   cta2style: 0,
+  cta2target: 0,
   cta2text: 0,
-  cta2url: (s) => checkUrl(s, `Invalid Cta2Url: ${s}`),
+  cta2url: (s) => checkCtaUrl(s, {}, 2),
   description: (s) => s || getMetaContent('name', 'description') || '',
   details: 0,
-  entityid: (_, options) => getUuid(options.prodUrl),
+  entityid: (_, options) => {
+    const floodGateColor = options.floodgatecolor || getMetadata('floodgatecolor') || '';
+    const salt = floodGateColor === 'default' || floodGateColor === '' ? '' : floodGateColor;
+    return getUuid(`${options.prodUrl}${salt}`);
+  },
   env: (s) => s || '',
   eventduration: 0,
   eventend: (s) => getDateProp(s, `Invalid Event End Date: ${s}`),
   eventstart: (s) => getDateProp(s, `Invalid Event Start Date: ${s}`),
-  floodgatecolor: (s) => s || getMetadata('floodGateColor') || 'default',
+  floodgatecolor: (s, options) => s || options.floodgatecolor || getMetadata('floodgatecolor') || 'default',
   lang: async (s, options) => {
     if (s) return s;
     const { lang } = await getCountryAndLang(options);
@@ -471,7 +425,12 @@ const props = {
       ? getDateProp(s, `Invalid Modified Date: ${s}`)
       : getDateProp(lastModified || doc.lastModified, `document.lastModified is not a valid date: ${doc.lastModified}`);
   },
-  origin: (s) => s || getOrigin(),
+  origin: (s, options) => {
+    if (s) return s;
+    const fgColor = options.floodgatecolor || getMetadata('floodgatecolor');
+    return getOrigin(fgColor);
+  },
+
   playurl: (s) => checkUrl(s, `Invalid PlayURL: ${s}`),
   primarytag: (s) => {
     const tag = getTag(s);
@@ -532,6 +491,7 @@ const getCaasProps = (p) => {
               url: p.cta1url,
               style: p.cta1style,
               icon: p.cta1icon,
+              target: p.cta1target,
             },
           }),
           ...(p.cta2url && {
@@ -540,6 +500,7 @@ const getCaasProps = (p) => {
               url: p.cta2url,
               style: p.cta2style,
               icon: p.cta2icon,
+              target: p.cta2target,
             },
           }),
         },
@@ -614,6 +575,7 @@ const postDataToCaaS = async ({ accessToken, caasEnv, caasProps, draftOnly }) =>
 };
 
 export {
+  checkUrl,
   getCardMetadata,
   getCaasProps,
   getConfig,

@@ -3,13 +3,24 @@ import { createTag } from '../../utils/utils.js';
 import { getMetadata } from '../section-metadata/section-metadata.js';
 
 const DOUBLE_WIDE = 'DoubleWideCard';
+const HALF_HEIGHT = 'HalfHeightCard';
 
 export const addBackgroundImg = (picture, cardType, card) => {
   const url = picture.querySelector('img').src;
   card.append(createTag('div', { class: `consonant-${cardType}-img`, style: `background-image: url(${url})` }));
 };
 
-const getUpFromSectionMetadata = (section) => {
+export const addVideoBtn = (link, cardType, card) => {
+  const cardImage = card.querySelector(`.consonant-${cardType}-img`);
+  const playBtn = createTag('div', { class: `consonant-${cardType}-videoIco` });
+  if (cardType === HALF_HEIGHT) return cardImage.append(playBtn);
+  link.innerHTML = '';
+  link.appendChild(playBtn);
+  link.classList.add('consonant-videoButton-wrapper');
+  return cardImage.append(link);
+};
+
+export const getUpFromSectionMetadata = (section) => {
   const sectionMetadata = section.querySelector('.section-metadata');
   if (!sectionMetadata) return null;
   const metadata = getMetadata(sectionMetadata);
@@ -21,19 +32,18 @@ export const addFooter = (links, container, merch) => {
   const linksArr = Array.from(links);
   const linksLeng = linksArr.length;
   const hrTag = merch ? '<hr>' : '';
-  let footer = `<div class="consonant-CardFooter">${hrTag}<div class="consonant-CardFooter-row" data-cells="1">`;
-  footer = linksArr.reduce(
-    (combined, link, index) => (
-      `${combined}<div class="consonant-CardFooter-cell consonant-CardFooter-cell--${(linksLeng === 2 && index === 0) ? 'left' : 'right'}">${link.outerHTML}</div>`),
-    footer,
-  );
-  footer += '</div></div>';
-
-  container.insertAdjacentHTML('beforeend', footer);
-  links.forEach((link) => {
+  const footer = createTag('div', { class: 'consonant-CardFooter' }, hrTag);
+  const row = createTag('div', { class: 'consonant-CardFooter-row', 'data-cells': '1' });
+  linksArr.forEach((link, index) => {
     const { parentElement } = link;
     if (parentElement && document.body.contains(parentElement)) parentElement.remove();
+    const holder = createTag('div', { class: `consonant-CardFooter-cell consonant-CardFooter-cell--${(linksLeng === 2 && index === 0) ? 'left' : 'right'}` });
+    holder.append(link);
+    row.append(holder);
   });
+
+  footer.append(row);
+  container.insertAdjacentElement('beforeend', footer);
 };
 
 export const addWrapper = (el, section, cardType) => {

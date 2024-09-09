@@ -1,6 +1,6 @@
 import { createTag } from '../../utils/utils.js';
-import { decorateBlockAnalytics, decorateLinkAnalytics } from '../../martech/attributes.js';
 import { decorateButtons } from '../../utils/decorate.js';
+import { processTrackingLabels } from '../../martech/attributes.js';
 
 const faq = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [] };
 const mediaCollection = {};
@@ -28,15 +28,15 @@ function toggleMedia(con, trig, status) {
 
 function displayMedia(displayArea, el, dd, i, expanded) {
   const id = el.getAttribute('aria-controls').split('-')[1];
-  [...mediaCollection[id]].map(
+  [...mediaCollection[id]].forEach(
     (mediaCollectionItem, idx, total) => {
       mediaCollectionItem.classList.remove('expanded');
 
-      for (let index = 0; index < total.length; index++) {
+      total.forEach((element, index) => {
         const trigger = document.querySelector(`#accordion-${id}-trigger-${index + 1}`);
         const content = document.querySelector(`#accordion-${id}-content-${index + 1}`);
         toggleMedia(content, trigger, 'open');
-      }
+      });
       toggleMedia(dd, el);
       displayArea.childNodes[i - 1].classList.add('expanded');
 
@@ -48,13 +48,16 @@ function displayMedia(displayArea, el, dd, i, expanded) {
   );
 }
 
-function handleClick(el, dd, num, id) {
+function handleClick(el, dd, num) {
   const expanded = el.getAttribute('aria-expanded') === 'true';
+  const analyticsValue = el.getAttribute('daa-ll');
   if (expanded) {
     el.setAttribute('aria-expanded', 'false');
+    el.setAttribute('daa-ll', analyticsValue.replace(/close-/, 'open-'));
     dd.setAttribute('hidden', '');
   } else {
     el.setAttribute('aria-expanded', 'true');
+    el.setAttribute('daa-ll', analyticsValue.replace(/open-/, 'close-'));
     dd.removeAttribute('hidden');
   }
 
@@ -69,15 +72,16 @@ function defalutOpen(accordion) {
 function createItem(accordion, id, heading, num, edit) {
   const triggerId = `accordion-${id}-trigger-${num}`;
   const panelId = `accordion-${id}-content-${num}`;
-  const panelClass = `accordion-${id}`;
   const icon = createTag('span', { class: 'accordion-icon' });
   const hTag = heading.querySelector('h1, h2, h3, h4, h5, h6');
+  const analyticsString = `open-${num}--${processTrackingLabels(heading.textContent)}`;
   const button = createTag('button', {
     type: 'button',
     id: triggerId,
-    class: 'accordion-trigger',
+    class: 'accordion-trigger tracking-header',
     'aria-expanded': 'false',
     'aria-controls': panelId,
+    'daa-ll': analyticsString,
   }, heading.textContent);
   button.append(icon);
 
@@ -88,7 +92,7 @@ function createItem(accordion, id, heading, num, edit) {
   const dtAttrs = hTag ? {} : { role: 'heading', 'aria-level': 3 };
   const dtHtml = hTag ? createTag(hTag.tagName, { class: 'accordion-heading' }, button) : button;
   const dt = createTag('dt', dtAttrs, dtHtml);
-  const dd = createTag('dd', { role: 'region', 'aria-labelledby': triggerId, id: panelId, hidden: true }, panel);
+  const dd = createTag('dd', { 'aria-labelledby': triggerId, id: panelId, hidden: true }, panel);
   const dm = createTag('div', { class: 'media-p' });
 
   if (edit) {
@@ -131,7 +135,14 @@ export default function init(el) {
 
   const headings = el.querySelectorAll(':scope > div:nth-child(odd)');
   const items = [...headings].map(
-    (heading, idx) => createItem(accordion, id, heading, idx + 1, isEditorial, accordionMedia),
+    (heading, idx) => createItem(
+      accordion,
+      id,
+      heading,
+      idx + 1,
+      isEditorial,
+      accordionMedia,
+    ),
   );
 
   if (isSeo) { setSEO(items); }
@@ -141,8 +152,6 @@ export default function init(el) {
   const maxWidthClass = Array.from(el.classList).find((style) => style.startsWith('max-width-'));
   el.classList.add('con-block', maxWidthClass || 'max-width-10-desktop');
   accordion.classList.add('foreground');
-  decorateBlockAnalytics(el);
-  decorateLinkAnalytics(accordion, headings);
   el.append(accordion);
   if (isEditorial) {
     el.append(accordionMedia);

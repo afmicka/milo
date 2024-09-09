@@ -34,7 +34,7 @@ class Search {
       this.clearSearchForm();
     });
     observer.observe(this.trigger, { attributeFilter: ['aria-expanded'] });
-    logErrorFor(this.init.bind(this), 'Search has failed loading');
+    logErrorFor(this.init.bind(this), 'Search init has failed', 'errorType=error,module=gnav-search');
   }
 
   async init() {
@@ -46,7 +46,7 @@ class Search {
 
   async getLabels() {
     this.labels = {};
-    [this.labels.search, this.labels.clearResults, this.labels.tryAdvancedSearch] = await replaceKeyArray(['search', 'clear-results', 'try-advanced-search'], getFedsPlaceholderConfig(), 'feds');
+    [this.labels.search, this.labels.clearResults, this.labels.tryAdvancedSearch] = await replaceKeyArray(['search', 'clear-results', 'try-advanced-search'], getFedsPlaceholderConfig());
   }
 
   decorate() {

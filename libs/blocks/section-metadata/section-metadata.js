@@ -1,20 +1,4 @@
-export function handleFocalpoint(pic, child, removeChild) {
-  const image = pic.querySelector('img');
-  if (!child || !image) return;
-  let text = '';
-  if (child.childElementCount === 2) {
-    const dataElement = child.querySelectorAll('p')[1];
-    text = dataElement?.textContent;
-    if (removeChild) dataElement?.remove();
-  } else if (child.textContent) {
-    text = child.textContent;
-    const childData = child.childNodes;
-    if (removeChild) childData.forEach((c) => c.nodeType === Node.TEXT_NODE && c.remove());
-  }
-  const directions = text.trim().toLowerCase().split(',');
-  const [x, y = ''] = directions;
-  image.style.objectPosition = `${x} ${y}`;
-}
+import { handleFocalpoint } from '../../utils/decorate.js';
 
 function handleBackground(div, section) {
   const pic = div.background.content?.querySelector('picture');
@@ -43,10 +27,32 @@ export async function handleStyle(text, section) {
   section.classList.add(...styles);
 }
 
+function handleMasonry(text, section) {
+  section.classList.add(...['masonry-layout', 'masonry-up']);
+  const divs = section.querySelectorAll(":scope > div:not([class*='metadata'])");
+  const spans = [];
+  text.split('\n').forEach((line) => spans.push(...line.trim().split(',')));
+  [...divs].forEach((div, i) => {
+    const spanWidth = spans[i] ? spans[i] : 'span 4';
+    div.classList.add(`grid-${spanWidth.trim().replace(' ', '-')}`);
+  });
+}
+
 function handleLayout(text, section) {
   if (!(text || section)) return;
   const layoutClass = `grid-template-columns-${text.replaceAll(' | ', '-')}`;
   section.classList.add(layoutClass);
+}
+
+export function getDelayTime(time) {
+  if (time > 99) return time;
+  return (time * 1000);
+}
+
+function handleDelay(time, section) {
+  if (!(time || section)) return;
+  section.classList.add('hide-sticky-section');
+  setTimeout(() => { section.classList.remove('hide-sticky-section'); }, getDelayTime(time));
 }
 
 export const getMetadata = (el) => [...el.childNodes].reduce((rdx, row) => {
@@ -65,4 +71,6 @@ export default async function init(el) {
   if (metadata.style) await handleStyle(metadata.style.text, section);
   if (metadata.background) handleBackground(metadata, section);
   if (metadata.layout) handleLayout(metadata.layout.text, section);
+  if (metadata.masonry) handleMasonry(metadata.masonry.text, section);
+  if (metadata.delay) handleDelay(metadata.delay.text, section);
 }

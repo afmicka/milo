@@ -89,6 +89,18 @@ describe('Faas', () => {
     expect(getFaasHostSubDomain('stage')).to.equal('staging.');
     expect(getFaasHostSubDomain('dev')).to.equal('dev.');
     expect(getFaasHostSubDomain('qa')).to.equal('qa.');
-    expect(getFaasHostSubDomain()).to.equal('dev.');
+    expect(getFaasHostSubDomain()).to.equal('qa.');
+  });
+
+  it('localizes the destination url', () => {
+    expect(makeFaasConfig()).to.equal(defaultState);
+    const arConfig = config;
+    arConfig.locales.ae_ar = { ietf: 'ar', tk: 'nwq1mna.css', dir: 'rtl' };
+    arConfig.pathname = '/ae_ar/';
+    arConfig.prodDomains = ['business.adobe.com'];
+    setConfig(arConfig);
+    const faasConfig = makeFaasConfig(state);
+    expect(faasConfig.d).to.equal('https://business.adobe.com/ae_ar/request-consultation/thankyou.html');
+    setConfig(config);
   });
 });

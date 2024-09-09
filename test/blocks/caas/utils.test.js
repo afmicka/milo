@@ -124,7 +124,7 @@ describe('loadStrings', () => {
 describe('getConfig', () => {
   const state = defaultState;
 
-  state.featuredCards = [{ contentId: 'a' }, { contentId: 'b' }];
+  state.featuredCards = [{ contentId: 'https://business.adobe.com/resources/articles/4-pieces-of-social-media-real-estate-you-shouldnt-ignore.html' }, { contentId: 'e9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd' }];
   state.andLogicTags = [
     { intraTagLogic: 'AND', andTags: ['caas:products/indesign', 'caas:products/reader'] },
     { intraTagLogic: 'OR', andTags: ['caas:country/br', 'caas:country/ca'] },
@@ -166,11 +166,13 @@ describe('getConfig', () => {
         collectionButtonStyle: 'primary',
         resultsPerPage: 5,
         endpoint:
-          'https://www.adobe.com/chimera-api/collection/myTargetActivity.json?originSelection=hawks&contentTypeTags=&collectionTags=&excludeContentWithTags=&language=en&country=us&complexQuery=((%22caas%3Aproducts%2Findesign%22%2BAND%2B%22caas%3Aproducts%2Freader%22)%2BAND%2B(%22caas%3Acountry%2Fbr%22%2BOR%2B%22caas%3Acountry%2Fca%22))%2BAND%2B((%22caas%3Acontent-type%2Fvideo%22%2BAND%2B%22caas%3Acontent-type%2Fblog%22))&excludeIds=&currentEntityId=&featuredCards=a%2Cb&environment=&draft=false&size=10&flatFile=false',
+          'https://www.adobe.com/chimera-api/collection/myTargetActivity.json?originSelection=hawks&contentTypeTags=&secondSource=&secondaryTags=&collectionTags=&excludeContentWithTags=&language=en&country=us&complexQuery=((%22caas%3Aproducts%2Findesign%22%2BAND%2B%22caas%3Aproducts%2Freader%22)%2BAND%2B(%22caas%3Acountry%2Fbr%22%2BOR%2B%22caas%3Acountry%2Fca%22))%2BAND%2B((%22caas%3Acontent-type%2Fvideo%22%2BAND%2B%22caas%3Acontent-type%2Fblog%22))&excludeIds=&currentEntityId=&featuredCards=c94ec235-50c2-595e-9fa8-0b4602c08712%2Ce9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd&environment=&draft=true&size=10&flatFile=false',
         fallbackEndpoint: '',
+        hideDateInterval: false,
         totalCardsToShow: 10,
         cardStyle: 'half-height',
-        ctaAction: '_blank',
+        ctaAction: '_self',
+        cardHoverEffect: 'default',
         detailsTextOption: 'default',
         showTotalResults: false,
         i18n: {
@@ -184,8 +186,11 @@ describe('getConfig', () => {
           titleHeadingLevel: 'h3',
         },
         setCardBorders: false,
+        showCardBadges: false,
+        showFooterDivider: false,
         useOverlayLinks: false,
         additionalRequestParams: {},
+        dynamicCTAForLiveEvents: false,
         banner: {
           register: { description: 'Sign Up', url: '#registration' },
           upcoming: { description: 'Upcoming' },
@@ -196,8 +201,8 @@ describe('getConfig', () => {
         disableBanners: false,
         reservoir: { sample: 3, pool: 1000 },
       },
-      featuredCards: ['a', 'b'],
-      headers: [],
+      featuredCards: ['c94ec235-50c2-595e-9fa8-0b4602c08712', 'e9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd'],
+      headers: [['X-Adobe-Floodgate', 'pink']],
       hideCtaIds: [''],
       hideCtaTags: [],
       filterPanel: {
@@ -205,6 +210,70 @@ describe('getConfig', () => {
         eventFilter: '',
         type: 'left',
         showEmptyFilters: false,
+        categories: [
+          {
+            group: 'All Topics',
+            id: '',
+            items: [],
+            title: 'All Topics',
+          },
+          {
+            group: 'photo',
+            icon: '',
+            id: 'caas:product-categories/photo',
+            items: [],
+            title: 'Photo',
+          },
+          {
+            group: 'graphic-design',
+            id: 'caas:product-categories/graphic-design',
+            icon: '',
+            items: [],
+            title: 'Graphic Design',
+          },
+          {
+            group: 'video',
+            id: 'caas:product-categories/video',
+            icon: '',
+            items: [],
+            title: 'Video',
+          },
+          {
+            group: 'illustration',
+            id: 'caas:product-categories/illustration',
+            icon: '',
+            items: [],
+            title: 'Illustration',
+          },
+          {
+            group: 'ui-and-ux',
+            id: 'caas:product-categories/ui-and-ux',
+            icon: '',
+            items: [],
+            title: 'UI and UX',
+          },
+          {
+            group: 'acrobat-and-pdf',
+            id: 'caas:product-categories/acrobat-and-pdf',
+            icon: '',
+            items: [],
+            title: 'Acrobat and PDF',
+          },
+          {
+            group: '3d-and-ar',
+            id: 'caas:product-categories/3d-and-ar',
+            icon: '',
+            items: [],
+            title: '3D and AR',
+          },
+          {
+            group: 'social-media',
+            id: 'caas:product-categories/social-media',
+            icon: '',
+            items: [],
+            title: 'Social Media',
+          },
+        ],
         filters: [
           {
             group: 'Life Sciences',
@@ -361,11 +430,13 @@ describe('getConfig', () => {
         collectionButtonStyle: 'primary',
         resultsPerPage: 5,
         endpoint:
-          'https://www.adobe.com/chimera-api/collection/myTargetActivity.json?originSelection=hawks&contentTypeTags=&collectionTags=&excludeContentWithTags=&language=fr&country=be&complexQuery=((%22caas%3Aproducts%2Findesign%22%2BAND%2B%22caas%3Aproducts%2Freader%22)%2BAND%2B(%22caas%3Acountry%2Fbr%22%2BOR%2B%22caas%3Acountry%2Fca%22))%2BAND%2B((%22caas%3Acontent-type%2Fvideo%22%2BAND%2B%22caas%3Acontent-type%2Fblog%22))&excludeIds=&currentEntityId=&featuredCards=a%2Cb&environment=&draft=false&size=10&flatFile=false',
+          'https://www.adobe.com/chimera-api/collection/myTargetActivity.json?originSelection=hawks&contentTypeTags=&secondSource=&secondaryTags=&collectionTags=&excludeContentWithTags=&language=fr&country=be&complexQuery=((%22caas%3Aproducts%2Findesign%22%2BAND%2B%22caas%3Aproducts%2Freader%22)%2BAND%2B(%22caas%3Acountry%2Fbr%22%2BOR%2B%22caas%3Acountry%2Fca%22))%2BAND%2B((%22caas%3Acontent-type%2Fvideo%22%2BAND%2B%22caas%3Acontent-type%2Fblog%22))&excludeIds=&currentEntityId=&featuredCards=b6aa23a7-f6bf-51f4-a2b6-0a93fc31bd16%2Ce9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd&environment=&draft=true&size=10&flatFile=false',
         fallbackEndpoint: '',
+        hideDateInterval: false,
         totalCardsToShow: 10,
         cardStyle: 'half-height',
-        ctaAction: '_blank',
+        ctaAction: '_self',
+        cardHoverEffect: 'default',
         detailsTextOption: 'default',
         showTotalResults: false,
         i18n: {
@@ -379,8 +450,11 @@ describe('getConfig', () => {
           titleHeadingLevel: 'h3',
         },
         setCardBorders: false,
+        showCardBadges: false,
+        showFooterDivider: false,
         useOverlayLinks: false,
         additionalRequestParams: {},
+        dynamicCTAForLiveEvents: false,
         banner: {
           register: { description: 'Sign Up', url: '#registration' },
           upcoming: { description: 'Upcoming' },
@@ -391,8 +465,8 @@ describe('getConfig', () => {
         disableBanners: false,
         reservoir: { sample: 3, pool: 1000 },
       },
-      featuredCards: ['a', 'b'],
-      headers: [],
+      featuredCards: ['b6aa23a7-f6bf-51f4-a2b6-0a93fc31bd16', 'e9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd'],
+      headers: [['X-Adobe-Floodgate', 'pink']],
       hideCtaIds: [''],
       hideCtaTags: [],
       filterPanel: {
@@ -400,6 +474,70 @@ describe('getConfig', () => {
         eventFilter: '',
         type: 'left',
         showEmptyFilters: false,
+        categories: [
+          {
+            group: 'All Topics',
+            id: '',
+            items: [],
+            title: 'All Topics',
+          },
+          {
+            group: 'photo',
+            icon: '',
+            id: 'caas:product-categories/photo',
+            items: [],
+            title: 'Photo',
+          },
+          {
+            group: 'graphic-design',
+            id: 'caas:product-categories/graphic-design',
+            icon: '',
+            items: [],
+            title: 'Graphic Design',
+          },
+          {
+            group: 'video',
+            id: 'caas:product-categories/video',
+            icon: '',
+            items: [],
+            title: 'Video',
+          },
+          {
+            group: 'illustration',
+            id: 'caas:product-categories/illustration',
+            icon: '',
+            items: [],
+            title: 'Illustration',
+          },
+          {
+            group: 'ui-and-ux',
+            id: 'caas:product-categories/ui-and-ux',
+            icon: '',
+            items: [],
+            title: 'UI and UX',
+          },
+          {
+            group: 'acrobat-and-pdf',
+            id: 'caas:product-categories/acrobat-and-pdf',
+            icon: '',
+            items: [],
+            title: 'Acrobat and PDF',
+          },
+          {
+            group: '3d-and-ar',
+            id: 'caas:product-categories/3d-and-ar',
+            icon: '',
+            items: [],
+            title: '3D and AR',
+          },
+          {
+            group: 'social-media',
+            id: 'caas:product-categories/social-media',
+            icon: '',
+            items: [],
+            title: 'Social Media',
+          },
+        ],
         filters: [
           {
             group: 'Sciences de la vie',
@@ -558,6 +696,7 @@ describe('getCountryAndLang', () => {
     expect(expected).to.deep.eq({
       country: 'ec',
       language: 'es',
+      locales: '',
     });
   });
 
@@ -565,8 +704,9 @@ describe('getCountryAndLang', () => {
     setConfig(cfg);
     const expected = getCountryAndLang({ autoCountryLang: false });
     expect(expected).to.deep.eq({
-      country: 'us',
+      country: 'US',
       language: 'en',
+      locales: '',
     });
   });
 
@@ -577,8 +717,9 @@ describe('getCountryAndLang', () => {
       autoCountryLang: true,
     });
     expect(expected).to.deep.eq({
-      country: 'be',
-      language: 'fr-be',
+      country: 'BE',
+      language: 'fr',
+      locales: '',
     });
   });
 
@@ -592,8 +733,268 @@ describe('getCountryAndLang', () => {
       autoCountryLang: true,
     });
     expect(expected).to.deep.eq({
+      country: 'US',
+      language: 'en',
+      locales: '',
+    });
+  });
+});
+
+describe('getFloodgateCaasConfig', () => {
+  const caasFgState = defaultState;
+  caasFgState.fetchCardsFromFloodgateTree = true;
+  caasFgState.draftDb = true;
+
+  it('should return a floodgate enabled caas config object', async () => {
+    const caasFgConfig = await getConfig(caasFgState, strings);
+    expect(caasFgConfig).to.be.eql({
+      collection: {
+        mode: 'lightest',
+        layout: { type: '4up', gutter: '4x', container: '1200MaxWidth' },
+        button: { style: 'primary' },
+        collectionButtonStyle: 'primary',
+        resultsPerPage: 5,
+        endpoint:
+          'https://www.adobe.com/chimera-api/collection/myTargetActivity.json?originSelection=hawks&contentTypeTags=&secondSource=&secondaryTags=&collectionTags=&excludeContentWithTags=&language=en&country=us&complexQuery=((%22caas%3Aproducts%2Findesign%22%2BAND%2B%22caas%3Aproducts%2Freader%22)%2BAND%2B(%22caas%3Acountry%2Fbr%22%2BOR%2B%22caas%3Acountry%2Fca%22))%2BAND%2B((%22caas%3Acontent-type%2Fvideo%22%2BAND%2B%22caas%3Acontent-type%2Fblog%22))&excludeIds=&currentEntityId=&featuredCards=c94ec235-50c2-595e-9fa8-0b4602c08712%2Ce9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd&environment=&draft=true&size=10&flatFile=false',
+        fallbackEndpoint: '',
+        hideDateInterval: false,
+        totalCardsToShow: 10,
+        cardStyle: 'half-height',
+        ctaAction: '_self',
+        cardHoverEffect: 'default',
+        detailsTextOption: 'default',
+        showTotalResults: false,
+        i18n: {
+          cardTitleAccessibilityLevel: 6,
+          lastModified: 'Last modified {date}',
+          prettyDateIntervalFormat: '{ddd}, {LLL} {dd} | {timeRange} {timeZone}',
+          totalResultsText: '{total} Results',
+          title: '',
+          onErrorTitle: 'Error Loading Title',
+          onErrorDescription: 'Error Desc',
+          titleHeadingLevel: 'h3',
+        },
+        setCardBorders: false,
+        showCardBadges: false,
+        showFooterDivider: false,
+        useOverlayLinks: false,
+        additionalRequestParams: {},
+        dynamicCTAForLiveEvents: false,
+        banner: {
+          register: { description: 'Sign Up', url: '#registration' },
+          upcoming: { description: 'Upcoming' },
+          live: { description: 'Live' },
+          onDemand: { description: 'On Demand' },
+        },
+        useLightText: false,
+        disableBanners: false,
+        reservoir: { sample: 3, pool: 1000 },
+      },
+      featuredCards: ['c94ec235-50c2-595e-9fa8-0b4602c08712', 'e9d71f5e-e7c9-5d6d-89e9-2ffdad17b8bd'],
+      headers: [['X-Adobe-Floodgate', 'pink']],
+      hideCtaIds: [''],
+      hideCtaTags: [],
+      filterPanel: {
+        enabled: true,
+        eventFilter: '',
+        type: 'left',
+        showEmptyFilters: false,
+        categories: [
+          {
+            group: 'All Topics',
+            id: '',
+            items: [],
+            title: 'All Topics',
+          },
+          {
+            group: 'photo',
+            icon: '',
+            id: 'caas:product-categories/photo',
+            items: [],
+            title: 'Photo',
+          },
+          {
+            group: 'graphic-design',
+            id: 'caas:product-categories/graphic-design',
+            icon: '',
+            items: [],
+            title: 'Graphic Design',
+          },
+          {
+            group: 'video',
+            id: 'caas:product-categories/video',
+            icon: '',
+            items: [],
+            title: 'Video',
+          },
+          {
+            group: 'illustration',
+            id: 'caas:product-categories/illustration',
+            icon: '',
+            items: [],
+            title: 'Illustration',
+          },
+          {
+            group: 'ui-and-ux',
+            id: 'caas:product-categories/ui-and-ux',
+            icon: '',
+            items: [],
+            title: 'UI and UX',
+          },
+          {
+            group: 'acrobat-and-pdf',
+            id: 'caas:product-categories/acrobat-and-pdf',
+            icon: '',
+            items: [],
+            title: 'Acrobat and PDF',
+          },
+          {
+            group: '3d-and-ar',
+            id: 'caas:product-categories/3d-and-ar',
+            icon: '',
+            items: [],
+            title: '3D and AR',
+          },
+          {
+            group: 'social-media',
+            id: 'caas:product-categories/social-media',
+            icon: '',
+            items: [],
+            title: 'Social Media',
+          },
+        ],
+        filters: [
+          {
+            group: 'Life Sciences',
+            id: 'caas:industry/life-sciences',
+            items: [],
+            openedOnLoad: true,
+          },
+          {
+            group: 'Journey Phase',
+            icon: '/path/to/icon.svg',
+            id: 'caas:journey-phase',
+            items: [
+              {
+                id: 'caas:journey-phase/acceleration',
+                label: 'Acceleration',
+              },
+              {
+                id: 'caas:journey-phase/acquisition',
+                label: 'Acquisition',
+              },
+              {
+                id: 'caas:journey-phase/discover',
+                label: 'Discover',
+              },
+              {
+                id: 'caas:journey-phase/evaluate',
+                label: 'Evaluate',
+              },
+              {
+                id: 'caas:journey-phase/explore',
+                label: 'Explore',
+              },
+              {
+                id: 'caas:journey-phase/retention',
+                label: 'Retention',
+              },
+            ],
+            openedOnLoad: false,
+          },
+        ],
+        filterLogic: 'or',
+        i18n: {
+          leftPanel: {
+            header: 'Refine Your Results',
+            clearAllFiltersText: 'Clear All',
+            mobile: {
+              filtersBtnLabel: 'Filters',
+              panel: {
+                header: 'Filter by',
+                totalResultsText: '{total} Results',
+                applyBtnText: 'Apply',
+                clearFilterText: 'Clear',
+                doneBtnText: 'Done',
+              },
+              group: {
+                totalResultsText: '{total} Results',
+                applyBtnText: 'Apply',
+                clearFilterText: 'Clear',
+                doneBtnText: 'Done',
+              },
+            },
+          },
+          topPanel: {
+            groupLabel: 'Filters:',
+            clearAllFiltersText: 'Clear All',
+            moreFiltersBtnText: 'More Filters +',
+            mobile: {
+              group: {
+                totalResultsText: '{total} Results',
+                applyBtnText: 'Apply',
+                clearFilterText: 'Clear',
+                doneBtnText: 'Done',
+              },
+            },
+          },
+        },
+      },
+      sort: {
+        enabled: false,
+        defaultSort: 'dateDesc',
+        options: [],
+      },
+      pagination: {
+        animationStyle: 'paged',
+        enabled: false,
+        resultsQuantityShown: false,
+        loadMoreButton: { style: 'primary', useThemeThree: false },
+        type: 'paginator',
+        i18n: {
+          loadMore: { btnText: 'Load More', resultsQuantityText: '{start} of {end} displayed' },
+          paginator: {
+            resultsQuantityText: '{start} - {end} of {total} results',
+            prevLabel: 'Prev',
+            nextLabel: 'Next',
+          },
+        },
+      },
+      bookmarks: {
+        showOnCards: false,
+        leftFilterPanel: {
+          bookmarkOnlyCollection: false,
+          showBookmarksFilter: false,
+          selectBookmarksIcon: '',
+          unselectBookmarksIcon: '',
+        },
+        i18n: {
+          leftFilterPanel: { filterTitle: 'My favorites' },
+          card: { saveText: 'Save Card', unsaveText: 'Unsave Card' },
+        },
+      },
+      search: {
+        enabled: false,
+        searchFields: [],
+        i18n: {
+          noResultsTitle: 'No Results Found',
+          noResultsDescription: 'Try checking your spelling or broadening your search.',
+          leftFilterPanel: { searchTitle: 'Search', searchPlaceholderText: 'Search Here' },
+          topFilterPanel: { searchPlaceholderText: 'Search Here' },
+          filterInfo: { searchPlaceholderText: 'Search Here' },
+        },
+      },
+      language: 'en',
       country: 'us',
-      language: 'en-us',
+      customCard: [
+        'card',
+        'return ``',
+      ],
+      analytics: { trackImpressions: '', collectionIdentifier: '' },
+      target: {
+        enabled: true,
+        lastViewedSession: '',
+      },
     });
   });
 });
