@@ -1,6 +1,6 @@
 import { html, LitElement, css, nothing } from 'lit';
 import { deeplink, pushStateFromComponent } from '../deeplink.js';
-import { debounce } from '../utils.js';
+import { debounce, updateHash, paramsToHash } from '../utils.js';
 import { EVENT_MERCH_SIDENAV_SELECT } from '../constants.js';
 
 export class MerchSidenavList extends LitElement {
@@ -54,6 +54,7 @@ export class MerchSidenavList extends LitElement {
 
     selectElement(element, selected = true) {
         element.selected = selected;
+        element.shadowRoot?.querySelector('a')?.setAttribute('aria-selected', selected);
         if (element.parentNode.tagName === 'SP-SIDENAV-ITEM') {
             this.selectElement(element.parentNode, false);
         }
@@ -144,10 +145,15 @@ export class MerchSidenavList extends LitElement {
       this.stopDeeplink = deeplink(
           (params) => {
               const value = params[this.deeplink] ?? 'all';
-              const element = this.querySelector(
+              let element = this.querySelector(
                   `sp-sidenav-item[value="${value}"]`,
-              );
-              if (!element) return;
+              )
+              // fallback for invalid filter
+              if (!element) {
+                element = this.querySelector('sp-sidenav-item:first-child');
+                updateHash(this.deeplink, element.value);
+              }
+
               this.updateComplete.then(() => {
                   if (element.firstElementChild?.tagName === 'SP-SIDENAV-ITEM') {
                     element.expanded = true;
@@ -166,6 +172,7 @@ export class MerchSidenavList extends LitElement {
         this.addEventListener('click', this.handleClickDebounced);
         this.updateComplete.then(() => {
             if (!this.deeplink) return;
+            paramsToHash(['filter', 'single_app']);
             this.startDeeplink();
         });
     }
