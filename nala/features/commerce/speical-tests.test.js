@@ -654,11 +654,11 @@ test.describe('Commerce feature test suite', () => {
             mappingKey = `${country}_${languageCode}`;
           }
 
-          const expectedLabels = taxLabelMapping[mappingKey];
+          let expectedLabels = taxLabelMapping[mappingKey];
 
+          // If locale is not in mapping, expect no labels for all 4 segments
           if (!expectedLabels) {
-            // If no mapping found, skip this locale (might not be in the table)
-            return { path: countryPath, country, locale, errors: [] };
+            expectedLabels = [null, null, null, null];
           }
 
           // Find all prices on the page - they should be in order: INDIVIDUAL_COM, TEAM_COM, INDIVIDUAL_EDU, TEAM_EDU
@@ -716,6 +716,26 @@ test.describe('Commerce feature test suite', () => {
                 if (actualLabel.trim() !== expectedLabel.trim()) {
                   errors.push(`Segment ${segmentNames[i]} (${locale}): Expected tax label "${expectedLabel}", but found "${actualLabel.trim()}"`);
                 }
+              }
+            }
+            
+            // Check unit text: TEAM prices (indices 1 and 3) should have unit text, INDIVIDUAL prices (indices 0 and 2) should not
+            const isTeamPrice = i === 1 || i === 3; // TEAM_COM or TEAM_EDU
+            // Use first() to handle multiple .price-unit-type elements, and filter out disabled ones
+            const unitTextElement = priceElement.locator('.price-unit-type:not(.disabled)').first();
+            const unitTextCount = await priceElement.locator('.price-unit-type:not(.disabled)').count();
+            const unitTextExists = unitTextCount > 0;
+            const unitText = unitTextExists ? await unitTextElement.textContent() : '';
+            
+            if (isTeamPrice) {
+              // TEAM prices should have unit text
+              if (!unitTextExists || unitText.trim() === '') {
+                errors.push(`Segment ${segmentNames[i]} (${locale}): Expected unit text to be displayed for TEAM price, but no unit text found`);
+              }
+            } else {
+              // INDIVIDUAL prices should NOT have unit text
+              if (unitTextExists && unitText.trim() !== '') {
+                errors.push(`Segment ${segmentNames[i]} (${locale}): Expected no unit text for INDIVIDUAL price, but found "${unitText.trim()}"`);
               }
             }
           }

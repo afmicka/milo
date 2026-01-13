@@ -190,7 +190,6 @@ module.exports = {
           { country: 'CH', locale: 'fr_CH', urlPrefix: 'ch_fr' },
           { country: 'CH', locale: 'it_CH', urlPrefix: 'ch_it' },
           { country: 'CL', locale: 'es_CL' },
-          { country: 'CN', locale: 'zh-hans_CN' },
           { country: 'CO', locale: 'es_CO' },
           { country: 'CR', locale: 'es_CR' },
           { country: 'CY', locale: 'en_CY', urlPrefix: 'cy_en' },

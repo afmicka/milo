@@ -100,7 +100,7 @@ module.exports = {
   'QA_en': [null, null, null, null],
   'QA_ar': [null, null, null, null],
   // MU has urlPrefix 'africa' which creates 'AFRICA_en' key
-  'AFRICA_en': [null, null, null, null],
+  'AFRICA_en': ['incl. VAT', 'incl. VAT', null, null],
 
   // Other regions - no tax labels
   'IL_iw': [null, null, null, null],
