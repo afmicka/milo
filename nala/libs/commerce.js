@@ -179,6 +179,24 @@ function validateCommerceUrl(url, options = {}) {
 }
 
 /**
+ * Default path builder: uses basePath with country prefix
+ * Constructs localized paths based on country and urlPrefix
+ * @param {string} basePath - The base path to localize
+ * @param {string} country - The country code (e.g., 'US', 'DE', 'FR')
+ * @param {string} urlPrefix - Optional URL prefix (e.g., 'ae_en', 'be_fr')
+ * @returns {string} - The localized path
+ */
+function buildCountryPath(basePath, country, urlPrefix) {
+  if (country === 'US') {
+    return basePath;
+  } else if (urlPrefix) {
+    return `/${urlPrefix}${basePath}`;
+  } else {
+    return `/${country.toLowerCase()}${basePath}`;
+  }
+}
+
+/**
  * Helper function to construct test URLs with proper query parameter handling
  * Includes MILO_LIBS and MAS_LIBS environment variables
  * @param {string} baseURL - The base URL from Playwright test context
@@ -264,6 +282,347 @@ async function setupMasRequestLogger(masRequestErrors) {
       }
     },
   };
+}
+
+/**
+ * Sets up a tracker to collect all network requests containing "web_commerce_artifact"
+ * @param {Array} WCSRequests - Array to store collected requests
+ * @returns {Object} - Object with listeners and getter method
+ */
+async function setupWCSTracker(WCSRequests) {
+  const seenRequestUrls = new Set();
+
+  return {
+    requestListener: async (request) => {
+      const url = request.url();
+
+      if (url.includes('web_commerce_artifact')) {
+        // Track all unique WCS requests (same URL only added once)
+        if (!seenRequestUrls.has(url)) {
+          seenRequestUrls.add(url);
+
+          const requestData = {
+            url,
+            method: request.method(),
+            headers: request.headers(),
+            postData: request.postData(),
+            resourceType: request.resourceType(),
+            timestamp: Date.now(),
+          };
+
+          WCSRequests.push(requestData);
+        }
+      }
+    },
+
+    responseListener: (response) => {
+      const url = response.url();
+
+      if (url.includes('web_commerce_artifact')) {
+        // Update existing request with response data if URL already tracked
+        const existingRequest = WCSRequests.find((req) => req.url === url);
+        if (existingRequest) {
+          existingRequest.status = response.status();
+          existingRequest.statusText = response.statusText();
+          existingRequest.responseHeaders = response.headers();
+          existingRequest.responseTimestamp = Date.now();
+        } else {
+          // New response without prior request tracking
+          const responseData = {
+            url,
+            method: response.request().method(),
+            status: response.status(),
+            statusText: response.statusText(),
+            responseHeaders: response.headers(),
+            responseTimestamp: Date.now(),
+          };
+
+          WCSRequests.push(responseData);
+          seenRequestUrls.add(url);
+        }
+      }
+    },
+
+    requestFailedListener: async (request) => {
+      const url = request.url();
+
+      if (url.includes('web_commerce_artifact')) {
+        const failure = request.failure();
+        const requestData = {
+          url,
+          method: request.method(),
+          failed: true,
+          failure: failure ? failure.errorText : 'Unknown error',
+          timestamp: Date.now(),
+        };
+
+        // Update existing request if found, otherwise add new
+        const existingRequest = WCSRequests.find((req) => req.url === url);
+        if (existingRequest) {
+          Object.assign(existingRequest, requestData);
+        } else {
+          WCSRequests.push(requestData);
+          seenRequestUrls.add(url);
+        }
+      }
+    },
+
+    /**
+     * Gets all collected unique web_commerce_artifact requests
+     * @returns {Array} - Array of unique request objects (one per unique URL)
+     */
+    getRequests: () => WCSRequests,
+  };
+}
+
+/**
+ * Sets up a tracker to collect all network requests containing "/mas/io/"
+ * @param {Array} MASRequests - Array to store collected requests
+ * @returns {Object} - Object with listeners and getter method
+ */
+async function setupMASTracker(MASRequests) {
+  const seenRequestUrls = new Set();
+
+  return {
+    requestListener: async (request) => {
+      const url = request.url();
+
+      if (url.includes('/mas/io/')) {
+        // Track all unique MAS requests (same URL only added once)
+        if (!seenRequestUrls.has(url)) {
+          seenRequestUrls.add(url);
+          seenRequestUrls.add(url);
+
+          const requestData = {
+            url,
+            method: request.method(),
+            headers: request.headers(),
+            postData: request.postData(),
+            resourceType: request.resourceType(),
+            timestamp: Date.now(),
+          };
+
+          MASRequests.push(requestData);
+        }
+      }
+    },
+
+    responseListener: async (response) => {
+      const url = response.url();
+
+      if (url.includes('/mas/io/')) {
+        // Update existing request with response data if URL already tracked
+        const existingRequest = MASRequests.find((req) => req.url === url);
+        if (existingRequest) {
+          existingRequest.status = response.status();
+          existingRequest.statusText = response.statusText();
+          existingRequest.responseHeaders = response.headers();
+          existingRequest.responseTimestamp = Date.now();
+
+          // Try to get response body if available
+          try {
+            const responseBody = await response.text();
+            existingRequest.responseBody = responseBody;
+          } catch (error) {
+            // Response body may not be available (already consumed or failed)
+            existingRequest.responseBodyError = error.message;
+          }
+        } else {
+          // New response without prior request tracking
+          const responseData = {
+            url,
+            method: response.request().method(),
+            status: response.status(),
+            statusText: response.statusText(),
+            responseHeaders: response.headers(),
+            responseTimestamp: Date.now(),
+          };
+
+          try {
+            const responseBody = await response.text();
+            responseData.responseBody = responseBody;
+          } catch (error) {
+            responseData.responseBodyError = error.message;
+          }
+
+          MASRequests.push(responseData);
+          seenRequestUrls.add(url);
+        }
+      }
+    },
+
+    requestFailedListener: async (request) => {
+      const url = request.url();
+
+      if (url.includes('/mas/io/')) {
+        const failure = request.failure();
+        const requestData = {
+          url,
+          method: request.method(),
+          failed: true,
+          failure: failure ? failure.errorText : 'Unknown error',
+          timestamp: Date.now(),
+        };
+
+        // Update existing request if found, otherwise add new
+        const existingRequest = MASRequests.find((req) => req.url === url);
+        if (existingRequest) {
+          Object.assign(existingRequest, requestData);
+        } else {
+          MASRequests.push(requestData);
+          seenRequestUrls.add(url);
+        }
+      }
+    },
+
+    /**
+     * Gets all collected unique /mas/io/ requests
+     * @returns {Array} - Array of unique request objects (one per unique URL)
+     */
+    getRequests: () => MASRequests,
+  };
+}
+
+/**
+ * Validates WCS requests for country, locale, status, server header, and environment URL
+ * @param {Array} requests - Array of WCS request objects from setupWCSTracker
+ * @param {Object} options - Validation options
+ * @param {string} options.expectedCountry - Expected country code
+ * @param {string} options.expectedLocale - Expected locale code
+ * @param {string} [options.env] - Optional environment: 'stage' (defaults to 'prod' if not provided)
+ * @param {boolean} [options.expectedServer] - Optional: if true, checks that server header equals 'adobe' (check skipped if omitted or false)
+ * @returns {Array} - Array of error messages (empty if all validations pass)
+ */
+function validateWCSRequests(requests, { expectedCountry, expectedLocale, env = 'prod', expectedServer }) {
+  const errors = [];
+
+  if (requests.length === 0) {
+    errors.push('No web_commerce_artifact requests found');
+    return errors;
+  }
+
+  // Determine expected URL pattern based on environment
+  // Defaults to 'prod' if env is not provided, checks 'stage' only if explicitly set
+  const expectedUrlPattern = env === 'stage'
+    ? 'https://www.stage.adobe.com/web_commerce_artifact_stage'
+    : 'https://www.adobe.com/web_commerce_artifact';
+
+  for (const request of requests) {
+    try {
+      const url = new URL(request.url);
+      // console.log('wcs request url: ', request.url);
+
+      // Validate URL contains correct environment domain
+      if (!request.url.includes(expectedUrlPattern)) {
+        const expectedEnv = env === 'stage' ? 'stage (www.stage.adobe.com)' : 'prod (www.adobe.com)';
+        errors.push(`${request.url} - Expected: environment=${expectedEnv} | URL does not contain ${expectedUrlPattern}`);
+      }
+
+      // Validate country parameter
+      const countryParam = url.searchParams.get('country');
+      if (countryParam !== expectedCountry) {
+        errors.push(`${request.url} - Expected: country=${expectedCountry} | Received: country=${countryParam}`);
+      }
+
+      // Validate locale parameter
+      const localeParam = url.searchParams.get('locale');
+      if (localeParam !== expectedLocale) {
+        errors.push(`${request.url} - Expected: locale=${expectedLocale} | Received: locale=${localeParam}`);
+      }
+
+      // Validate status code is 200
+      if (request.status !== 200) {
+        errors.push(`${request.url} - Expected: status=200 | Received: status=${request.status || 'undefined'}`);
+      }
+
+      // Validate server header equals "adobe" only if expectedServer is true
+      if (expectedServer === true) {
+        const serverHeader = request.responseHeaders?.['server'] || request.responseHeaders?.server;
+        if (serverHeader !== 'adobe') {
+          errors.push(`${request.url} - Expected: server header=adobe | Received: server header=${serverHeader || 'undefined'}`);
+        }
+      }
+    } catch (error) {
+      errors.push(`${request.url} - Error parsing URL: ${error.message}`);
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates MAS/IO requests for country and locale parameters
+ * @param {Array} requests - Array of MAS request objects from setupMASTracker
+ * @param {Object} options - Validation options
+ * @param {string} options.expectedCountry - Expected country code (checked in 'country' parameter)
+ * @param {string} options.expectedLocale - Expected locale code (checked in 'locale' parameter)
+ * @param {string} [options.env] - Optional environment: 'stage' (defaults to 'prod' if not provided)
+ * @param {boolean} [options.expectedServer] - Optional: if true, checks that server header equals 'adobe' (check skipped if omitted or false)
+ * @returns {Array} - Array of error messages (empty if all validations pass)
+ */
+function validateMASRequests(requests, { expectedCountry, expectedLocale, env = 'prod', expectedServer }) {
+  const errors = [];
+
+  if (requests.length === 0) {
+    errors.push('No /mas/io/ requests found');
+    return errors;
+  }
+
+  // Determine expected URL pattern based on environment
+  // Defaults to 'prod' if env is not provided, checks 'stage' only if explicitly set
+  const expectedUrlPattern = env === 'stage'
+    ? 'https://www.stage.adobe.com/mas/io/'
+    : 'https://www.adobe.com/mas/io/';
+
+  for (const request of requests) {
+    try {
+      const url = new URL(request.url);
+
+      // Validate URL contains correct environment domain
+      if (!request.url.includes(expectedUrlPattern)) {
+        const expectedEnv = env === 'stage' ? 'stage (www.stage.adobe.com)' : 'prod (www.adobe.com)';
+        errors.push(`${request.url} - Expected: environment=${expectedEnv} | URL does not contain ${expectedUrlPattern}`);
+      }
+
+      // Validate country parameter (MAS uses 'country' parameter)
+      // Note: US doesn't include country parameter in the request
+      const countryParam = url.searchParams.get('country');
+      if (expectedCountry === 'US') {
+        // For US, country param should be absent or null
+        if (countryParam !== null && countryParam !== undefined) {
+          errors.push(`${request.url} - Expected: country parameter to be absent for US | Received: country=${countryParam}`);
+        }
+      } else {
+        // For non-US, country param should match expected
+        if (countryParam !== expectedCountry) {
+          errors.push(`${request.url} - Expected: country=${expectedCountry} | Received: country=${countryParam}`);
+        }
+      }
+
+      // Validate locale parameter
+      const localeParam = url.searchParams.get('locale');
+      if (localeParam !== expectedLocale) {
+        errors.push(`${request.url} - Expected: locale=${expectedLocale} | Received: locale=${localeParam}`);
+      }
+
+      // Validate status code is 200
+      if (request.status !== 200) {
+        errors.push(`${request.url} - Expected: status=200 | Received: status=${request.status || 'undefined'}`);
+      }
+
+      // Validate server header only if expectedServer is true
+      if (expectedServer === true) {
+        const serverHeader = request.responseHeaders?.['server'] || request.responseHeaders?.server;
+        if (serverHeader !== 'adobe') {
+          errors.push(`${request.url} - Expected: server header=adobe | Received: server header=${serverHeader || 'undefined'}`);
+        }
+      }
+    } catch (error) {
+      errors.push(`${request.url} - Error parsing URL: ${error.message}`);
+    }
+  }
+
+  return errors;
 }
 
 /**
@@ -450,10 +809,15 @@ module.exports = {
   attachMasConsoleErrorsToFailure,
   setupMasRequestLogger,
   attachMasRequestErrorsToFailure,
+  setupWCSTracker,
+  validateWCSRequests,
+  setupMASTracker,
+  validateMASRequests,
   createWorkerPageSetup,
   addUrlQueryParams,
   validateCommerceUrl,
   constructTestUrl,
+  buildCountryPath,
   PRICE_PATTERN,
   DOCS_GALLERY_PATH,
   PLANS_NALA_PATH,
