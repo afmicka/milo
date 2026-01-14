@@ -1,13 +1,6 @@
-import { getConfig, getLanguage, getLocale, loadLanguageConfig } from '../../utils/utils.js';
+import { getConfig, getLanguage, getLocale, loadLanguageConfig, setInternational } from '../../utils/utils.js';
 
 const queriedPages = [];
-
-function setInternational(prefix) {
-  const domain = window.location.host.endsWith('.adobe.com') ? 'domain=adobe.com' : '';
-  const maxAge = 365 * 24 * 60 * 60; // max-age in seconds for 365 days
-  document.cookie = `international=${prefix};max-age=${maxAge};path=/;${domain}`;
-  sessionStorage.setItem('international', prefix);
-}
 
 function handleEvent({ prefix, link, callback } = {}) {
   if (typeof callback !== 'function') return;
@@ -98,4 +91,7 @@ export default async function init(block) {
   const hasPrefix = location.pathname.startsWith(`${prefix}/`);
   const path = location.href.replace(location.origin + (hasPrefix ? prefix : ''), '').replace('#langnav', '');
   links.forEach((link) => decorateLink(link, path, localeToLanguageMap));
+  if (config.lingoProjectSuccessLogging === 'on') {
+    window.lana.log('Load: Region_Nav_Modal', { sampleRate: 100, tags: 'lingo,lingo-region-nav-load' });
+  }
 }
