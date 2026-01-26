@@ -5,7 +5,7 @@
  * Structure: [INDIVIDUAL_COM, TEAM_COM, INDIVIDUAL_EDU, TEAM_EDU]
  * Values: tax label string, null (no label), or '-' (no label)
  */
-module.exports = {
+export default {
   // Europe
   'AT_de': ['inkl. MwSt.', 'inkl. MwSt.', 'inkl. MwSt.', 'zzgl. MwSt.'],
   'BE_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
@@ -64,11 +64,11 @@ module.exports = {
   // Middle East & Africa
   'EG_ar': ['بالضريبة', 'باستثناء ضريبة', 'بالضريبة', 'باستثناء ضريبة'],
   'EG_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
-  'MU_en': ['incl. VAT', 'incl. VAT', null, null],
+  'MU_en': ['excl. VAT', 'excl. VAT', 'excl. VAT', 'excl. VAT'],
   'NG_en': ['incl. VAT', 'incl. VAT', null, null],
   'SA_ar': ['بالضريبة', null, 'بالضريبة', null],
   'SA_en': ['incl. VAT', null, 'incl. VAT', null],
-  'ZA_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
+  'ZA_en': ['incl. VAT', 'incl. VAT', null, null],
 
   // Latin America
   'CO_es': [null, 'IVA no incluido', null, null],
@@ -99,12 +99,11 @@ module.exports = {
   'KW_ar': [null, null, null, null],
   'QA_en': [null, null, null, null],
   'QA_ar': [null, null, null, null],
-  // MU has urlPrefix 'africa' which creates 'AFRICA_en' key
-  'AFRICA_en': ['incl. VAT', 'incl. VAT', null, null],
 
   // Other regions - no tax labels
   'IL_iw': [null, null, null, null],
   'IL_en': [null, null, null, null],
+  'IL_he': [null, null, null, null],
   'MT_en': [null, null, null, null],
   'PH_en': [null, null, null, null],
   'PH_fil': [null, null, null, null],

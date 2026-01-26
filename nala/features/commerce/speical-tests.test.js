@@ -614,11 +614,20 @@ test.describe('Commerce feature test suite', () => {
           // console.info(`[Test Page]: ${testPage} (country=${country}, locale=${locale}${urlPrefix ? `, urlPrefix=${urlPrefix}` : ''})`);
 
           await page.goto(testPage, { waitUntil: 'commit', timeout: 30000 });
+          await page.waitForLoadState('domcontentloaded');
 
           // Wait for commerce elements to load
+          let pricesFound = false;
           try {
-            const commPage = new CommercePage(page);
-            await commPage.price.first().waitFor({ state: 'visible', timeout: 20000 });
+            // Wait for at least one inline-price element to exist
+            await page.waitForFunction(
+              () => {
+                const prices = document.querySelectorAll('span[is="inline-price"]');
+                return prices.length > 0;
+              },
+              { timeout: 20000 },
+            );
+            pricesFound = true;
             
             // Wait for placeholders to be resolved
             await page.waitForFunction(
@@ -630,39 +639,62 @@ test.describe('Commerce feature test suite', () => {
               },
               { timeout: 20000 },
             );
+            
+            // Wait for prices to stabilize - check that price count doesn't change for 3 seconds
+            let lastPriceCount = 0;
+            let stableCount = 0;
+            const maxWaitTime = 30000; // 30 seconds max
+            const stableTime = 3000; // 3 seconds of stability
+            const pollInterval = 500; // Check every 500ms
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < maxWaitTime) {
+              const currentPriceCount = await page.evaluate(() => {
+                return document.querySelectorAll('span[is="inline-price"]').length;
+              });
+              
+              if (currentPriceCount === lastPriceCount && currentPriceCount > 0) {
+                stableCount += pollInterval;
+                if (stableCount >= stableTime) {
+                  break; // Prices have been stable for stableTime
+                }
+              } else {
+                stableCount = 0; // Reset stability counter
+                lastPriceCount = currentPriceCount;
+              }
+              
+              await page.waitForTimeout(pollInterval);
+            }
           } catch (error) {
-            errors.push('No commerce elements found on page (no commerce elements visible and no placeholders resolved)');
+            if (!pricesFound) {
+              errors.push('No commerce elements found on page (no price elements found and no placeholders resolved)');
+            } else {
+              errors.push('Placeholders not resolved on page or prices did not stabilize');
+            }
           }
 
           await page.waitForTimeout(2000);
 
-          // Get expected tax labels for this locale
-          // The mapping key should match what pathBuilder constructs:
-          // - If urlPrefix exists (e.g., 'ae_en'), convert to 'AE_en' format
-          // - Otherwise use country + language from locale (e.g., 'AT_de' from locale 'de_AT')
-          let mappingKey;
-          if (urlPrefix) {
-            // urlPrefix is like 'ae_en', 'be_fr', 'ch_de' - convert to 'AE_en', 'BE_fr', 'CH_de'
-            const urlPrefixParts = urlPrefix.split('_');
-            const urlCountry = urlPrefixParts[0].toUpperCase();
-            const urlLang = urlPrefixParts[1] || 'en';
-            mappingKey = `${urlCountry}_${urlLang}`;
-          } else {
-            // No urlPrefix, use country + language from locale
-            const localeParts = locale.split('_');
-            const languageCode = localeParts[0] || 'en';
-            mappingKey = `${country}_${languageCode}`;
+          // Find all prices on the page - they should be in order: INDIVIDUAL_COM, TEAM_COM, INDIVIDUAL_EDU, TEAM_EDU
+          const allPrices = await page.locator('span[is="inline-price"]').all();
+          
+          // If no prices found, add error and skip tax label validation
+          if (allPrices.length === 0) {
+            errors.push('No price elements found on page (span[is="inline-price"])');
           }
 
+          // Get expected tax labels for this locale
+          // Always use locale-based mapping (e.g., 'MU_en' from locale 'en_MU')
+          // urlPrefix is only for URL construction, not for tax label mapping
+          const localeParts = locale.split('_');
+          const languageCode = localeParts[0] || 'en';
+          const mappingKey = `${country}_${languageCode}`;
           let expectedLabels = taxLabelMapping[mappingKey];
 
           // If locale is not in mapping, expect no labels for all 4 segments
           if (!expectedLabels) {
             expectedLabels = [null, null, null, null];
           }
-
-          // Find all prices on the page - they should be in order: INDIVIDUAL_COM, TEAM_COM, INDIVIDUAL_EDU, TEAM_EDU
-          const allPrices = await page.locator('span[is="inline-price"]').all();
           const segmentNames = ['INDIVIDUAL_COM', 'TEAM_COM', 'INDIVIDUAL_EDU', 'TEAM_EDU'];
           const priceCount = allPrices.length;
           
