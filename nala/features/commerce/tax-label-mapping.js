@@ -7,16 +7,16 @@
  */
 export default {
   // Europe
-  'AT_de': ['inkl. MwSt.', 'inkl. MwSt.', 'inkl. MwSt.', 'zzgl. MwSt.'],
+  'AT_de': ['inkl. MwSt', 'inkl. MwSt', 'inkl. MwSt', 'exkl. MwSt'],
   'BE_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
   'BE_fr': ['TTC', 'HT', 'TTC', 'HT'],
   'BE_nl': ['incl. btw', 'excl. btw', 'incl. btw', 'excl. btw'],
   'BG_bg': ['вкл. ДДС', 'без ДДС', 'вкл. ДДС', 'без ДДС'],
-  'CH_de': ['inkl. MwSt.', 'zzgl. MwSt.', 'inkl. MwSt.', 'zzgl. MwSt.'],
+  'CH_de': ['inkl. MwSt', 'exkl. MwSt', 'inkl. MwSt', 'exkl. MwSt'],
   'CH_fr': ['TTC', 'HT', 'TTC', 'HT'],
   'CH_it': ['incl. IVA', 'escl. IVA.', 'incl. IVA', 'escl. IVA.'],
   'CZ_cs': ['včetně DPH', 'bez DPH', 'včetně DPH', 'bez DPH'],
-  'DE_de': ['inkl. MwSt.', 'zzgl. MwSt.', 'inkl. MwSt.', 'zzgl. MwSt.'],
+  'DE_de': ['inkl. MwSt', 'exkl. MwSt', 'inkl. MwSt', 'exkl. MwSt'],
   'DK_da': ['inkl. moms', 'ekskl. moms', 'inkl. moms', 'ekskl. moms'],
   'EE_et': ['käibemaksuga', 'käibemaksuta', 'käibemaksuga', 'käibemaksuta'],
   'ES_es': ['IVA incluido', 'sin IVA', 'IVA incluido', 'sin IVA'],
@@ -31,7 +31,7 @@ export default {
   'IE_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
   'IT_it': ['incl. IVA', 'escl. IVA.', 'incl. IVA', 'escl. IVA.'],
   'LT_lt': ['su PVM', 'be PVM', 'su PVM', null],
-  'LU_de': ['inkl. MwSt.', 'zzgl. MwSt.', 'inkl. MwSt.', 'zzgl. MwSt.'],
+  'LU_de': ['inkl. MwSt', 'exkl. MwSt', 'inkl. MwSt', 'exkl. MwSt'],
   'LU_en': ['incl. VAT', 'excl. VAT', 'incl. VAT', 'excl. VAT'],
   'LU_fr': ['TTC', 'HT', 'TTC', 'HT'],
   'LV_lv': ['ar PVN', 'bez PVN', 'ar PVN', null],
