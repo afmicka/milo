@@ -19,7 +19,7 @@ module.exports = {
           path: '/creativecloud/plans.html',
           baseURL: 'https://www.adobe.com', // Override framework baseURL for this path
           skipCountries: ['US', 'MT', 'CY', 'CN', 'RU', 'NO'], // Skip US locale for this path
-          expectedServer: false, // change to "true" for checking new wcs server
+          expectedServer: true, // change to "true" for checking new wcs server
           skipElementCheck: true, // Skip waiting for commerce elements to be visible
         },
       ],

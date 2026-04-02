@@ -4,8 +4,71 @@ import { features } from './special-tests.spec.js';
 import CommercePage from './commerce.page.js';
 import FedsLogin from '../feds/login/login.page.js';
 import FedsHeader from '../feds/header/header.page.js';
-import { PRICE_PATTERN, constructTestUrl, setupWCSTracker, validateWCSRequests, setupMASTracker, validateMASRequests } from '../../libs/commerce.js';
+import { PRICE_PATTERN, constructTestUrl, setupWCSTracker, validateWCSRequests, setupMASTracker, validateMASRequests, buildCountryPath } from '../../libs/commerce.js';
 import taxLabelMapping from './tax-label-mapping.js';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/**
+ * Playwright writes the HAR when the browser context is closed.
+ * Files land in test-results/har/ (gitignored with test-results/).
+ * @param {string} filename - e.g. commerce-wcs-country-locale.har
+ * @param {string} [urlFilter] - optional glob to limit capture (smaller HARs)
+ */
+function recordHarOptions(filename, urlFilter) {
+  const harDir = path.join(process.cwd(), 'test-results', 'har');
+  fs.mkdirSync(harDir, { recursive: true });
+  const options = { path: path.join(harDir, filename) };
+  if (urlFilter) options.urlFilter = urlFilter;
+  return options;
+}
+
+/** Caps concurrent pages per test to limit stage/socket pressure (see net::ERR_CONNECTION_CLOSED in HAR). */
+const COMMERCE_PARALLEL_LIMIT = Math.max(
+  1,
+  Number.parseInt(process.env.COMMERCE_PARALLEL_LIMIT ?? '6', 10) || 6,
+);
+
+/**
+ * Like Promise.allSettled, but runs at most `limit` factories at a time (order preserved).
+ * @param {number} limit
+ * @param {Array<() => Promise<unknown>>} factories
+ */
+async function allSettledPool(limit, factories) {
+  if (factories.length === 0) return [];
+
+  const results = new Array(factories.length);
+  let nextIndex = 0;
+
+  async function runNext() {
+    const i = nextIndex;
+    nextIndex += 1;
+    if (i >= factories.length) return;
+    try {
+      results[i] = { status: 'fulfilled', value: await factories[i]() };
+    } catch (reason) {
+      results[i] = { status: 'rejected', reason };
+    }
+    await runNext();
+  }
+
+  const workerCount = Math.min(Math.max(1, limit), factories.length);
+  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
+  return results;
+}
+
+/**
+ * Test timeout for country/matrix runs: bounded concurrency increases wall-clock time (waves).
+ * @param {number} configCount
+ * @param {number} [msPerWave] - budget for one parallel batch (slowest page in the batch)
+ */
+function commerceMatrixTimeoutMs(configCount, msPerWave = 200000) {
+  if (configCount <= 0) return 120000;
+  const parallel = Math.max(1, COMMERCE_PARALLEL_LIMIT);
+  const waves = Math.ceil(configCount / parallel);
+  const fixedOverheadMs = 180000;
+  return Math.min(3600000, fixedOverheadMs + waves * msPerWave);
+}
 
 let COMM;
 test.beforeEach(async ({ page, baseURL, browserName }) => {
@@ -26,8 +89,6 @@ test.beforeEach(async ({ page, baseURL, browserName }) => {
 test.describe('Commerce feature test suite', () => {
   // @Commerce-WCS-Country-Locale - Validate WCS requests have correct country and locale params
   test(`${features[0].name}, ${features[0].tags}`, async ({ browser, baseURL }) => {
-    test.setTimeout(600000); // 10 minutes for all countries
-
     const { data, paths, path: legacyPath, env: specEnv = 'prod', envs: specEnvs } = features[0];
     // Determine which environments to test
     // Priority: COMMERCE_ENV env var > spec envs array > spec env default
@@ -55,6 +116,7 @@ test.describe('Commerce feature test suite', () => {
     // Create a browser context for all pages
     const context = await browser.newContext({
       extraHTTPHeaders: { 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' },
+      recordHar: recordHarOptions('commerce-wcs-country-locale.har', '**/*web_commerce_artifact*'),
     });
 
     // Create test configurations: each path × each country × each environment (excluding skipped countries)
@@ -75,9 +137,12 @@ test.describe('Commerce feature test suite', () => {
       });
     });
 
-    // Run all tests in parallel
-    const results = await Promise.allSettled(
-      testConfigs.map(async ({ pathConfig, countryConfig, env }) => {
+    test.setTimeout(commerceMatrixTimeoutMs(testConfigs.length));
+
+    // Run tests with bounded concurrency (avoids ERR_CONNECTION_CLOSED to stage WCS)
+    const results = await allSettledPool(
+      COMMERCE_PARALLEL_LIMIT,
+      testConfigs.map(({ pathConfig, countryConfig, env }) => async () => {
         const { country, locale, urlPrefix } = countryConfig;
         const { path: basePath, pathBuilder: pathSpecificBuilder, expectedServer, skipElementCheck } = pathConfig;
         // Use path-specific pathBuilder if provided, otherwise use feature-level default
@@ -254,8 +319,6 @@ test.describe('Commerce feature test suite', () => {
 
   // @Commerce-WCS-Geo-Country-Locale - Validate WCS requests with akamaiLocale parameter
   test(`${features[1].name}, ${features[1].tags}`, async ({ browser, baseURL }) => {
-    test.setTimeout(600000); // 10 minutes
-
     const { data, paths, browserParams, env: specEnv = 'prod', envs: specEnvs } = features[1];
     // Determine which environments to test
     // Priority: COMMERCE_ENV env var > spec envs array > spec env default
@@ -279,6 +342,7 @@ test.describe('Commerce feature test suite', () => {
     // Create a browser context for all pages
     const context = await browser.newContext({
       extraHTTPHeaders: { 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' },
+      recordHar: recordHarOptions('commerce-wcs-geo.har', '**/*web_commerce_artifact*'),
     });
 
     // Combine both arrays with their types for unified processing
@@ -287,9 +351,69 @@ test.describe('Commerce feature test suite', () => {
       ...nonSupported.map((akamaiLocale) => ({ akamaiLocale, type: 'non-supported' })),
     ];
 
+    // Build a country->(locale,urlPrefix) mapping from the country/locale spec,
+    // so we can derive the correct locale-prefixed page path (e.g. GB -> /uk/, DO -> /la/).
+    // Preference is English when available, otherwise first defined locale.
+    const countryLocaleIndex = (() => {
+      const countries = features?.[0]?.data?.countries ?? [];
+      const byCountry = new Map();
+      countries.forEach((c) => {
+        if (!c?.country || !c?.locale) return;
+        const list = byCountry.get(c.country) ?? [];
+        list.push(c);
+        byCountry.set(c.country, list);
+      });
+
+      /**
+       * @param {string} country
+       * @returns {{ locale: string, urlPrefix?: string } | null}
+       */
+      function pick(country) {
+        const list = byCountry.get(country);
+        if (!list || list.length === 0) return null;
+        const preferred = list.find((c) => typeof c.locale === 'string' && c.locale.startsWith('en_')) ?? list[0];
+        return { locale: preferred.locale, urlPrefix: preferred.urlPrefix };
+      }
+
+      return { pick };
+    })();
+
+    // Expand `/fr/...` fixture path into all mapped locale-prefixed page paths (e.g. /uk/, /la/, /mena_en/),
+    // and then run ALL akamaiLocale query-param combinations against EACH of those pages.
+    const expandedTestPaths = (() => {
+      const expanded = [...testPaths];
+      const seen = new Set(testPaths.map((p) => p.path));
+
+      const frPathConfigs = testPaths.filter((p) => typeof p.path === 'string' && p.path.startsWith('/fr/'));
+      if (frPathConfigs.length === 0) return expanded;
+
+      frPathConfigs.forEach((pathConfig) => {
+        const basePath = pathConfig.path.replace(/^\/fr/, '');
+
+        // Only generate locale-prefixed pages for supported country codes (these have meaningful mappings).
+        supported.forEach((pageCountry) => {
+          const picked = countryLocaleIndex.pick(pageCountry);
+          if (!picked) return;
+
+          const pagePath = buildCountryPath(basePath, pageCountry, picked.urlPrefix);
+          if (seen.has(pagePath)) return;
+          seen.add(pagePath);
+
+          const pageLang = String(picked.locale).split('_')[0] || 'en';
+          expanded.push({
+            ...pathConfig,
+            path: pagePath,
+            expectedLocale: (akamaiLocale, type) => (type === 'supported' ? `${pageLang}_${akamaiLocale}` : `${pageLang}_US`),
+          });
+        });
+      });
+
+      return expanded;
+    })();
+
     // Create test configurations: each path × each akamaiLocale × each environment
     const testConfigs = [];
-    testPaths.forEach((pathConfig) => {
+    expandedTestPaths.forEach((pathConfig) => {
       allAkamaiLocales.forEach(({ akamaiLocale, type }) => {
         testEnvs.forEach((env) => {
           testConfigs.push({
@@ -304,9 +428,11 @@ test.describe('Commerce feature test suite', () => {
       });
     });
 
-    // Run all tests in parallel
-    const results = await Promise.allSettled(
-      testConfigs.map(async ({ path: basePath, akamaiLocale, type, expectedLocale, expectedServer, env }) => {
+    test.setTimeout(commerceMatrixTimeoutMs(testConfigs.length, 120000));
+
+    const results = await allSettledPool(
+      COMMERCE_PARALLEL_LIMIT,
+      testConfigs.map(({ path: basePath, akamaiLocale, type, expectedLocale, expectedServer, env }) => async () => {
         const page = await context.newPage();
         const errors = [];
 
@@ -323,6 +449,7 @@ test.describe('Commerce feature test suite', () => {
           // Construct URL with akamaiLocale parameter and commerce.env if stage
           const envParam = env === 'stage' ? '&commerce.env=stage' : '';
           const testPage = constructTestUrl(baseURL, basePath, `${browserParams}${akamaiLocale}${envParam}`);
+          console.log(`[Test Page]: ${testPage}`);
           await page.goto(testPage, { waitUntil: 'commit', timeout: 30000 });
 
           // Check for commerce elements - wait for elements themselves, not page load state
@@ -406,8 +533,6 @@ test.describe('Commerce feature test suite', () => {
 
   // @Commerce-MAS-Geo-Country-Locale - Validate MAS requests with akamaiLocale parameter
   test(`${features[2].name}, ${features[2].tags}`, async ({ browser, baseURL }) => {
-    test.setTimeout(600000); // 10 minutes
-
     const { data, paths, browserParams, env: specEnv = 'prod', envs: specEnvs } = features[2];
     // Determine which environments to test
     // Priority: COMMERCE_ENV env var > spec envs array > spec env default
@@ -430,6 +555,7 @@ test.describe('Commerce feature test suite', () => {
     // Create a browser context for all pages
     const context = await browser.newContext({
       extraHTTPHeaders: { 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' },
+      recordHar: recordHarOptions('commerce-mas-geo.har', '**/mas/io/**'),
     });
 
     // Create test configurations: each path × each akamaiLocale × each environment
@@ -448,9 +574,11 @@ test.describe('Commerce feature test suite', () => {
       });
     });
 
-    // Run all tests in parallel
-    const results = await Promise.allSettled(
-      testConfigs.map(async ({ path: basePath, akamaiLocale, expectedLocale, expectedCountry, env }) => {
+    test.setTimeout(commerceMatrixTimeoutMs(testConfigs.length, 120000));
+
+    const results = await allSettledPool(
+      COMMERCE_PARALLEL_LIMIT,
+      testConfigs.map(({ path: basePath, akamaiLocale, expectedLocale, expectedCountry, env }) => async () => {
         const page = await context.newPage();
         const errors = [];
 
@@ -581,8 +709,6 @@ test.describe('Commerce feature test suite', () => {
 
   // @Commerce-Tax-Labels-Defaults - Validate tax labels for all 4 price segments
   test(`${features[3].name}, ${features[3].tags}`, async ({ browser, baseURL }) => {
-    test.setTimeout(600000); // 10 minutes for all countries
-
     const { data, path: basePath } = features[3];
     const { countries } = data;
 
@@ -592,6 +718,7 @@ test.describe('Commerce feature test suite', () => {
     // Create a browser context for all pages
     const context = await browser.newContext({
       extraHTTPHeaders: { 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' },
+      recordHar: recordHarOptions('commerce-tax-labels.har', '**/*web_commerce_artifact*'),
     });
 
     // Create test configurations: one per country
@@ -599,9 +726,11 @@ test.describe('Commerce feature test suite', () => {
       countryConfig,
     }));
 
-    // Run all tests in parallel
-    const results = await Promise.allSettled(
-      testConfigs.map(async ({ countryConfig }) => {
+    test.setTimeout(commerceMatrixTimeoutMs(testConfigs.length, 120000));
+
+    const results = await allSettledPool(
+      COMMERCE_PARALLEL_LIMIT,
+      testConfigs.map(({ countryConfig }) => async () => {
         const { country, locale, urlPrefix } = countryConfig;
         // Construct path using pathBuilder function
         const countryPath = defaultPathBuilder(basePath, country, urlPrefix);
